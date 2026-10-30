@@ -1,0 +1,36 @@
+# Dependencies and generated builds
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data, databases, and process state
+data/
+**/data/
+*.db
+*.sqlite*
+*.pid
+*.log
+.DS_Store
+.m2-mode
+
+# Local backups
+.m*-backups/
+**/.m*-backups/
+.m11-scripts/
+*.bak
+*.bak.*
+
+# Raw milestone evidence is private; only reviewed text/source is allowed
+artifacts/*
+!artifacts/create-m4-fixtures.py
+!artifacts/milestone-status.md

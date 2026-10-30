@@ -1,0 +1,25 @@
+{
+  "name": "careerflow",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r --if-present typecheck",
+    "dev:api": "pnpm --filter @careerflow/api dev",
+    "dev:web": "pnpm --filter @careerflow/web dev",
+    "db:push": "pnpm --filter @careerflow/db push",
+    "db:generate": "pnpm --filter @careerflow/db generate",
+    "db:migrate": "pnpm --filter @careerflow/db migrate",
+    "smoke": "bash scripts/smoke.sh",
+    "up": "docker compose -f docker/compose.yml up -d",
+    "down": "docker compose -f docker/compose.yml down",
+    "dev:admin": "pnpm --filter @careerflow/admin dev",
+    "dev:employer": "pnpm --filter @careerflow/employer dev"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3"
+  }
+}

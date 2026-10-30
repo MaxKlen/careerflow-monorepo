@@ -1,0 +1,14 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { apiFetch } from '@/lib/api';
+type Flag = { key: string; enabled: boolean; description: string | null };
+export default function FlagsPage() {
+  const [flags, setFlags] = useState<Flag[]>([]); const [key, setKey] = useState(''); const [description, setDescription] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  async function load() { try { setFlags((await apiFetch<{ flags: Flag[] }>('/admin/feature-flags')).flags); } catch (e) { setError(e instanceof Error ? e.message : 'Could not load flags'); } }
+  useEffect(() => { void load(); }, []);
+  async function save(flag: { key: string; enabled: boolean; description?: string | null }) { setBusy(true); setError(''); try { await apiFetch('/admin/feature-flags', { method: 'PUT', body: JSON.stringify(flag) }); await load(); } catch (e) { setError(e instanceof Error ? e.message : 'Could not save flag'); } finally { setBusy(false); } }
+  return <div><h1>Feature flags</h1><p style={{ color: '#94a3b8' }}>Only owners can change flags. Changes are audit-logged; M8 does not yet use flags to gate candidate features.</p>
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBlockStart: 16 }}><input value={key} onChange={e => setKey(e.target.value)} placeholder="flag_key" maxLength={100} style={{ flex: 1, minWidth: 180, padding: 10, borderRadius: 6, border: '1px solid #475569', background: '#0b1f3a', color: 'white' }} /><input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)" maxLength={500} style={{ flex: 2, minWidth: 220, padding: 10, borderRadius: 6, border: '1px solid #475569', background: '#0b1f3a', color: 'white' }} /><button disabled={busy || !key.trim()} onClick={() => void save({ key, enabled: false, description: description || undefined })} style={{ background: '#3ddc97', color: '#0b1f3a', border: 0, padding: '10px 16px', borderRadius: 6 }}>Add flag</button></div>
+    {error && <p role="alert" style={{ color: '#fca5a5' }}>{error}</p>}<div style={{ display: 'grid', gap: 8, marginBlockStart: 16 }}>{flags.length ? flags.map(flag => <div key={flag.key} style={{ background: '#1e3a5f', padding: 12, borderRadius: 6, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}><div><strong>{flag.key}</strong>{flag.description && <span style={{ color: '#94a3b8', marginInlineStart: 8, fontSize: 13 }}>{flag.description}</span>}</div><button disabled={busy} onClick={() => void save({ ...flag, enabled: !flag.enabled })} style={{ background: flag.enabled ? '#3ddc97' : '#475569', color: flag.enabled ? '#0b1f3a' : 'white', border: 0, padding: '6px 14px', borderRadius: 6 }}>{flag.enabled ? 'ON' : 'OFF'}</button></div>) : <p style={{ color: '#94a3b8' }}>No flags yet.</p>}</div>
+  </div>;
+}
