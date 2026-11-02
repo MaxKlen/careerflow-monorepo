@@ -225,6 +225,7 @@ await run(
     );
     const list = await request("/employer/applications", {
       cookie: employerSignup.cookie,
+      origin: employerOrigin,
     });
     assert.equal(list.response.status, 200, JSON.stringify(list.body));
     assert.equal(list.body.applications.length, 1);
@@ -234,7 +235,7 @@ await run(
     );
     const detail = await request(
       `/employer/applications/${application.body.application.id}`,
-      { cookie: employerSignup.cookie },
+      { cookie: employerSignup.cookie, origin: employerOrigin },
     );
     assert.equal(detail.response.status, 200, JSON.stringify(detail.body));
   },
