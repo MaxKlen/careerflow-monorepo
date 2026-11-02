@@ -64,7 +64,7 @@ jobs:
       EMPLOYER_URL: http://localhost:3002
       NEXT_PUBLIC_API_URL: http://localhost:4000
       SESSION_SECRET: local-ci-session-secret-012345678901234567890123
-      STORAGE_DIR: /tmp/careerflow-uploads
+      STORAGE_DIR: ./data/uploads
       EMAIL_ENABLED: false
       API_URL: http://localhost:4000
       WEB_URL: http://localhost:3000
@@ -93,7 +93,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: mkdir -p /tmp/careerflow-uploads && pnpm db:push
+      - run: mkdir -p apps/api/data/uploads && pnpm db:push
       - name: Start API
         run: nohup pnpm dev:api > /tmp/careerflow-api.log 2>&1 &
       - name: Start candidate web
