@@ -87,12 +87,7 @@ test("M11 automated invitation and employer projection flow (not the visible wal
   const invitationUrl = invitation.body.invitationUrl as string;
 
   await test.step("1. Open the invitation acceptance surface", async () => {
-    await page.goto(
-      invitationUrl.replace(
-        employerOrigin,
-        process.env.PLAYWRIGHT_EMPLOYER_URL ?? employerOrigin,
-      ),
-    );
+    await page.goto(invitationUrl);
     await expect(
       page.getByRole("heading", { name: "Accept invitation" }),
     ).toBeVisible();
