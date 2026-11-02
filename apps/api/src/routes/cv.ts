@@ -58,8 +58,16 @@ export async function registerCv(app: FastifyInstance): Promise<void> {
     if (!(await ownsWorkspace(workspaceId, req.user!.id))) return reply.code(404).send({ error: 'not_found' });
     const rows = await db.select().from(cvImportSessions).where(eq(cvImportSessions.id, id)).limit(1);
     if (!rows[0] || rows[0].workspaceId !== workspaceId) return reply.code(404).send({ error: 'not_found' });
+    if (rows[0].status !== 'parsed') return reply.code(409).send({ error: 'cv_session_not_ready' });
 
     const body = ConfirmSectionsInput.parse(req.body);
+    const parsedKeys = new Set((rows[0].sections as Array<{ key: string }>).map(section => section.key));
+    const seenKeys = new Set<string>();
+    for (const section of body.sections) {
+      if (seenKeys.has(section.key)) return reply.code(400).send({ error: 'duplicate_section' });
+      seenKeys.add(section.key);
+      if (section.include && !parsedKeys.has(section.key)) return reply.code(400).send({ error: 'section_not_in_import' });
+    }
     const version = (await db.insert(profileVersions).values({ workspaceId, label: body.profileLabel, targetRoles: [] }).returning())[0]!;
 
     for (const sec of body.sections) {

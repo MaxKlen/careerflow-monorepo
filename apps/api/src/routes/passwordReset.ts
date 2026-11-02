@@ -3,7 +3,7 @@ import { and, eq, gt, isNull } from 'drizzle-orm';
 import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { db } from '../db.js';
-import { passwordResetTokens, users } from '@careerflow/db';
+import { passwordResetTokens, sessions, users } from '@careerflow/db';
 import { hashPassword } from '../password.js';
 import { emailConfigured, sendEmail } from '../email.js';
 import { env } from '../env.js';
@@ -101,6 +101,7 @@ export async function registerPasswordReset(app: FastifyInstance): Promise<void>
         .where(eq(users.id, claimed[0].userId))
         .returning({ id: users.id });
       if (!updated.length) throw new Error('reset_user_missing');
+      await tx.delete(sessions).where(eq(sessions.userId, claimed[0].userId));
       return true;
     });
     if (!consumed) return reply.code(400).send({ error: 'invalid_or_expired_token' });

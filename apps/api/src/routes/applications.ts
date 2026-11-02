@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull, or } from 'drizzle-orm';
 import { db } from '../db.js';
 import { applicationEvents, applicationRequirements, applications, evidenceItems, opportunityRequirements, opportunities, requirementEvidenceLinks, workspaces } from '@careerflow/db';
 import { CreateApplicationEventInput, CreateApplicationInput, LinkEvidenceInput, UpdateApplicationStageInput } from '@careerflow/shared';
@@ -38,7 +38,10 @@ export async function registerApplications(app: FastifyInstance): Promise<void> 
     let opportunityId: string | null = null;
     let sourceRequirements: typeof opportunityRequirements.$inferSelect[] = [];
     if (body.opportunityId) {
-      const opportunity = (await db.select().from(opportunities).where(eq(opportunities.id, body.opportunityId)).limit(1))[0];
+      const opportunity = (await db.select().from(opportunities).where(and(
+        eq(opportunities.id, body.opportunityId),
+        or(isNull(opportunities.workspaceId), eq(opportunities.workspaceId, workspaceId)),
+      )).limit(1))[0];
       if (!opportunity) return reply.code(404).send({ error: 'opportunity_not_found' });
       opportunityId = opportunity.id;
       sourceRequirements = await db.select().from(opportunityRequirements).where(eq(opportunityRequirements.opportunityId, opportunity.id));
