@@ -1,10 +1,13 @@
 name: Auto-Fix Prettier
+
 on:
   push:
     branches:
       - chore/zero-cost-launch-readiness
+
 permissions:
   contents: write
+
 jobs:
   format:
     runs-on: ubuntu-latest
@@ -16,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec prettier --write tests/e2e/employer-invitation.spec.ts
       - run: |
