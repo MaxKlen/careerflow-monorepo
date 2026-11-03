@@ -83,27 +83,21 @@ test("M11 employer invitation and projection flow", async ({ page }) => {
     opportunity.body?.opportunity?.id ?? opportunity.body?.id;
   expect(opportunityId).toBeDefined();
 
-  const application = await api(
-    `/applications/by-workspace/${workspaceId}`,
-    {
-      method: "POST",
-      headers: { cookie: candidateCookie },
-      json: { opportunityId },
-    },
-  );
+  const application = await api(`/applications/by-workspace/${workspaceId}`, {
+    method: "POST",
+    headers: { cookie: candidateCookie },
+    json: { opportunityId },
+  });
   expect(application.response.status).toBe(201);
   const applicationId =
     application.body?.application?.id ?? application.body?.id;
   expect(applicationId).toBeDefined();
 
-  const invitation = await api(
-    `/applications/${applicationId}/invitations`,
-    {
-      method: "POST",
-      headers: { cookie: candidateCookie, origin: candidateOrigin },
-      json: { employerEmail },
-    },
-  );
+  const invitation = await api(`/applications/${applicationId}/invitations`, {
+    method: "POST",
+    headers: { cookie: candidateCookie, origin: candidateOrigin },
+    json: { employerEmail },
+  });
   expect(invitation.response.status).toBe(201);
   const invitationUrl =
     invitation.body?.invitationUrl ?? invitation.body?.invitation?.url;
@@ -127,9 +121,7 @@ test("M11 employer invitation and projection flow", async ({ page }) => {
   });
 
   await test.step("4. Create the invited employer account", async () => {
-    await page
-      .getByRole("button", { name: "Create employer account" })
-      .click();
+    await page.getByRole("button", { name: "Create employer account" }).click();
     await expect(page).toHaveURL(/\/applications\/[0-9a-f-]+/);
     employerCookie = (await page.context().cookies(employerOrigin))
       .filter((cookie) => cookie.name === "cf_employer_session")
@@ -146,42 +138,38 @@ test("M11 employer invitation and projection flow", async ({ page }) => {
     await expect(page.getByText("M11 Product Role")).toBeVisible();
   });
 
-  await test.step(
-    "6. Verify the projected application remains scoped",
-    async () => {
-      await expect(page.getByText("CareerFlow Test Co")).toBeVisible();
-      await expect(page.getByText(/Requirements|Evidence/)).toBeVisible();
-      const projection = await api(`/employer/applications/${applicationId}`, {
+  await test.step("6. Verify the projected application remains scoped", async () => {
+    await expect(page.getByText("CareerFlow Test Co")).toBeVisible();
+    await expect(page.getByText(/Requirements|Evidence/)).toBeVisible();
+    const projection = await api(`/employer/applications/${applicationId}`, {
+      headers: { cookie: employerCookie, origin: employerOrigin },
+    });
+    expect(projection.response.status).toBe(200);
+    expect(projection.body).not.toHaveProperty("profile");
+    expect(projection.body).not.toHaveProperty("evidenceLibrary");
+    expect(projection.body).not.toHaveProperty("applications");
+    expect(projection.body.application).not.toHaveProperty("email");
+  });
+
+  await test.step("7. Candidate revokes accepted employer access", async () => {
+    const candidatePage = await page.context().newPage();
+    await candidatePage.goto(
+      `${candidateOrigin}/applications/${applicationId}`,
+    );
+    const revokeButton = candidatePage.getByRole("button", {
+      name: "Revoke employer access",
+    });
+    await expect(revokeButton).toBeVisible();
+    await revokeButton.click();
+    await expect(candidatePage.getByText(/revoked/)).toBeVisible();
+
+    const projectionAfterRevoke = await api(
+      `/employer/applications/${applicationId}`,
+      {
         headers: { cookie: employerCookie, origin: employerOrigin },
-      });
-      expect(projection.response.status).toBe(200);
-      expect(projection.body).not.toHaveProperty("profile");
-      expect(projection.body).not.toHaveProperty("evidenceLibrary");
-      expect(projection.body).not.toHaveProperty("applications");
-      expect(projection.body.application).not.toHaveProperty("email");
-    },
-  );
-
-  await test.step(
-    "7. Candidate revokes accepted employer access",
-    async () => {
-      const candidatePage = await page.context().newPage();
-      await candidatePage.goto(`${candidateOrigin}/applications/${applicationId}`);
-      const revokeButton = candidatePage.getByRole("button", {
-        name: "Revoke employer access",
-      });
-      await expect(revokeButton).toBeVisible();
-      await revokeButton.click();
-      await expect(candidatePage.getByText(/revoked/)).toBeVisible();
-
-      const projectionAfterRevoke = await api(
-        `/employer/applications/${applicationId}`,
-        {
-          headers: { cookie: employerCookie, origin: employerOrigin },
-        },
-      );
-      expect(projectionAfterRevoke.response.status).toBe(404);
-      await candidatePage.close();
-    },
-  );
+      },
+    );
+    expect(projectionAfterRevoke.response.status).toBe(404);
+    await candidatePage.close();
+  });
 });
