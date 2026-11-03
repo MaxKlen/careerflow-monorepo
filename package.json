@@ -7,7 +7,7 @@
   },
   "scripts": {
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "prettier --check package.json pnpm-workspace.yaml tests playwright.config.ts .github docs",
+    "lint": "prettier --check .",
     "test": "vitest run tests/config/*.test.ts",
     "test:integration": "node tests/integration/api.integration.mjs",
     "test:e2e": "playwright test",
