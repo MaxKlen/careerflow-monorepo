@@ -110,7 +110,7 @@ test("M11 automated invitation and employer projection flow (not the visible wal
 
   await test.step("5. Verify the employer projection page", async () => {
     await expect(
-      page.getByRole("heading", { name: /Application/ }),
+      page.getByRole("heading", { name: "M11 Product Role" }),
     ).toBeVisible();
     await expect(page.getByText("M11 Product Role")).toBeVisible();
   });
