@@ -6,7 +6,8 @@ import { SubmitFeedbackInput } from "@careerflow/shared";
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function registerFeedback(app: FastifyInstance): Promise<void> {
   app.addHook("preHandler", async (req, reply) => {
@@ -40,7 +41,8 @@ export async function registerFeedback(app: FastifyInstance): Promise<void> {
       beforeCreatedAt?: string;
       beforeId?: string;
     };
-    const limit = query.limit === undefined ? DEFAULT_PAGE_SIZE : Number(query.limit);
+    const limit =
+      query.limit === undefined ? DEFAULT_PAGE_SIZE : Number(query.limit);
     if (!Number.isInteger(limit) || limit < 1 || limit > MAX_PAGE_SIZE) {
       return reply.code(400).send({
         error: "invalid_limit",

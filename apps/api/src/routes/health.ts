@@ -7,7 +7,10 @@ export async function registerHealth(app: FastifyInstance): Promise<void> {
   app.get("/live", async () => ({ ok: true, service: "careerflow-api" }));
 
   // /ready and the legacy /health endpoint verify that PostgreSQL is reachable.
-  const checkDatabase = async (_req: unknown, reply: { code: (status: number) => { send: (body: unknown) => unknown } }) => {
+  const checkDatabase = async (
+    _req: unknown,
+    reply: { code: (status: number) => { send: (body: unknown) => unknown } },
+  ) => {
     try {
       await db.execute(sql`select 1`);
       return { ok: true, service: "careerflow-api" };
