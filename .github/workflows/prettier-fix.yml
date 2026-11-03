@@ -4,6 +4,9 @@ on:
     branches:
       - chore/zero-cost-launch-readiness
 
+permissions:
+  contents: write
+
 jobs:
   format:
     runs-on: ubuntu-latest
