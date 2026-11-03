@@ -67,7 +67,8 @@ test("M11 automated invitation and employer projection flow (not the visible wal
     json: { name: "M11 Workspace", kind: "personal" },
   });
   expect(workspace.response.status).toBe(201);
-  const workspaceId = workspace.body.workspace.id;
+  const workspaceId = workspace.body?.workspace?.id ?? workspace.body?.id;
+  expect(workspaceId).toBeDefined();
 
   const opportunity = await api("/opportunities", {
     method: "POST",
@@ -80,14 +81,17 @@ test("M11 automated invitation and employer projection flow (not the visible wal
     },
   });
   expect(opportunity.response.status).toBe(201);
+  const opportunityId = opportunity.body?.opportunity?.id ?? opportunity.body?.id;
+  expect(opportunityId).toBeDefined();
 
   const application = await api(`/applications/by-workspace/${workspaceId}`, {
     method: "POST",
     headers: { cookie: candidateCookie },
-    json: { opportunityId: opportunity.body.opportunity.id },
+    json: { opportunityId },
   });
   expect(application.response.status).toBe(201);
-  const applicationId = application.body.application.id;
+  const applicationId = application.body?.application?.id ?? application.body?.id;
+  expect(applicationId).toBeDefined();
 
   const invitation = await api(`/applications/${applicationId}/invitations`, {
     method: "POST",
@@ -95,7 +99,8 @@ test("M11 automated invitation and employer projection flow (not the visible wal
     json: { employerEmail },
   });
   expect(invitation.response.status).toBe(201);
-  const invitationUrl = invitation.body.invitationUrl as string;
+  const invitationUrl = invitation.body?.invitationUrl ?? invitation.body?.invitation?.url;
+  expect(invitationUrl).toBeDefined();
 
   await test.step("1. Open the invitation acceptance surface", async () => {
     await page.goto(invitationUrl);
@@ -125,6 +130,7 @@ test("M11 automated invitation and employer projection flow (not the visible wal
   });
 
   await test.step("5. Verify the employer projection page", async () => {
+    await page.waitForLoadState("networkidle");
     await expect(
       page.getByRole("heading", { name: "M11 Product Role", level: 1 }),
     ).toBeVisible();
