@@ -21,6 +21,9 @@
     "smoke": "bash scripts/smoke.sh",
     "up": "docker compose -f docker/compose.yml up -d",
     "down": "docker compose -f docker/compose.yml down",
+    "walkthrough:up": "bash scripts/walkthrough-up.sh",
+    "walkthrough:seed": "bash scripts/walkthrough-seed.sh",
+    "walkthrough:down": "bash scripts/walkthrough-down.sh",
     "dev:admin": "pnpm --filter @careerflow/admin dev",
     "dev:employer": "pnpm --filter @careerflow/employer dev"
   },

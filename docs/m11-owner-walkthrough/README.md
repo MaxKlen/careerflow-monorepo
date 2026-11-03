@@ -1,0 +1,3 @@
+# M11 Owner Walkthrough Preparation
+
+This folder prepares the required visible M11 walkthrough for an owner running CareerFlow locally with Docker and synthetic data. It is intentionally different from the automated Playwright test in CI: the owner must observe the real candidate and employer surfaces, confirm what candidate data is projected and what is withheld, test withdrawal or revocation, and record any unexpected behavior. The owner’s completed checklist and defect records should be returned in the next cycle so the roadmap gap analysis can be updated with the observed result. No deployment, cloud database, provider call, or participant data is required.

@@ -4,6 +4,10 @@
 
 Privacy and retention draft: pending legal review — owner action, in progress. This runbook and the draft do not authorize participant-facing use.
 
+## Gate ownership snapshot — 2026-11-03
+
+Gate owners and dates are assigned in [`docs/gate-list.md`](./gate-list.md). Gate 2 is awaiting external reviewer procurement as an owner action. Gate 3 is awaiting qualified legal review as an owner action. Gate 5 is blocked on Gates 1–3 closing, and host evaluation must not begin before those gates close.
+
 ## Release prerequisites
 
 Before a release, the owner must select a server-capable hosting platform for the three Next.js applications and Fastify API, an isolated PostgreSQL service, and durable upload storage. The platform must provide HTTPS, secret injection, logs, health checks, restart behavior, and a documented rollback mechanism. Static-only hosting is not sufficient for this codebase.
