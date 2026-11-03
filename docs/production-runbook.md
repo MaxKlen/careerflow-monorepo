@@ -2,6 +2,8 @@
 
 **Status:** Preparation only. No production host or deployment has been configured.
 
+Privacy and retention draft: pending legal review — owner action, in progress. This runbook and the draft do not authorize participant-facing use.
+
 ## Release prerequisites
 
 Before a release, the owner must select a server-capable hosting platform for the three Next.js applications and Fastify API, an isolated PostgreSQL service, and durable upload storage. The platform must provide HTTPS, secret injection, logs, health checks, restart behavior, and a documented rollback mechanism. Static-only hosting is not sufficient for this codebase.
