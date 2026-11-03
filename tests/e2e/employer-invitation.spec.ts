@@ -38,6 +38,7 @@ test("M11 automated invitation and employer projection flow (not the visible wal
   const employerEmail = `m11-employer-${suffix}@test.local`;
   const candidatePassword = "Candidate-password-123!";
   const employerPassword = "Employer-password-123!";
+  let employerCookie = "";
 
   const signup = await api("/auth/signup", {
     method: "POST",
@@ -116,6 +117,11 @@ test("M11 automated invitation and employer projection flow (not the visible wal
   await test.step("4. Create the invited employer account", async () => {
     await page.getByRole("button", { name: "Create employer account" }).click();
     await expect(page).toHaveURL(/\/applications\/[0-9a-f-]+/);
+    employerCookie = (await page.context().cookies(employerOrigin))
+      .filter((cookie) => cookie.name === "cf_employer_session")
+      .map((cookie) => `${cookie.name}=${cookie.value}`)
+      .join("; ");
+    expect(employerCookie).not.toBe("");
   });
 
   await test.step("5. Verify the employer projection page", async () => {
@@ -128,6 +134,14 @@ test("M11 automated invitation and employer projection flow (not the visible wal
   await test.step("6. Verify the projected application remains scoped", async () => {
     await expect(page.getByText("CareerFlow Test Co")).toBeVisible();
     await expect(page.getByText(/Requirements|Evidence/)).toBeVisible();
+    const projection = await api(`/employer/applications/${applicationId}`, {
+      headers: { cookie: employerCookie, origin: employerOrigin },
+    });
+    expect(projection.response.status).toBe(200);
+    expect(projection.body).not.toHaveProperty("profile");
+    expect(projection.body).not.toHaveProperty("evidenceLibrary");
+    expect(projection.body).not.toHaveProperty("applications");
+    expect(projection.body.application).not.toHaveProperty("email");
   });
 
   await test.step("7. Candidate revokes accepted employer access", async () => {
@@ -144,7 +158,7 @@ test("M11 automated invitation and employer projection flow (not the visible wal
 
     const projectionAfterRevoke = await api(
       `/employer/applications/${applicationId}`,
-      { headers: { cookie: employerSignup.cookie, origin: employerOrigin } },
+      { headers: { cookie: employerCookie, origin: employerOrigin } },
     );
     expect(projectionAfterRevoke.response.status).toBe(404);
     await candidatePage.close();
