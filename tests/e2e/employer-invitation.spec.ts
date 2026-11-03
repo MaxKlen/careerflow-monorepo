@@ -67,7 +67,8 @@ test("M11 automated invitation and employer projection flow (not the visible wal
     json: { name: "M11 Workspace", kind: "personal" },
   });
   expect(workspace.response.status).toBe(201);
-  const workspaceId = workspace.body?.workspace?.id ?? workspace.body?.id;
+  const workspaceId =
+    workspace.body?.workspace?.id ?? workspace.body?.id;
   expect(workspaceId).toBeDefined();
 
   const opportunity = await api("/opportunities", {
@@ -81,7 +82,8 @@ test("M11 automated invitation and employer projection flow (not the visible wal
     },
   });
   expect(opportunity.response.status).toBe(201);
-  const opportunityId = opportunity.body?.opportunity?.id ?? opportunity.body?.id;
+  const opportunityId =
+    opportunity.body?.opportunity?.id ?? opportunity.body?.id;
   expect(opportunityId).toBeDefined();
 
   const application = await api(`/applications/by-workspace/${workspaceId}`, {
@@ -90,7 +92,8 @@ test("M11 automated invitation and employer projection flow (not the visible wal
     json: { opportunityId },
   });
   expect(application.response.status).toBe(201);
-  const applicationId = application.body?.application?.id ?? application.body?.id;
+  const applicationId =
+    application.body?.application?.id ?? application.body?.id;
   expect(applicationId).toBeDefined();
 
   const invitation = await api(`/applications/${applicationId}/invitations`, {
@@ -99,7 +102,8 @@ test("M11 automated invitation and employer projection flow (not the visible wal
     json: { employerEmail },
   });
   expect(invitation.response.status).toBe(201);
-  const invitationUrl = invitation.body?.invitationUrl ?? invitation.body?.invitation?.url;
+  const invitationUrl =
+    invitation.body?.invitationUrl ?? invitation.body?.invitation?.url;
   expect(invitationUrl).toBeDefined();
 
   await test.step("1. Open the invitation acceptance surface", async () => {
