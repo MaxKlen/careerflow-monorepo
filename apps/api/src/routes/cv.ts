@@ -81,13 +81,11 @@ export async function registerCv(app: FastifyInstance): Promise<void> {
         .update(cvImportSessions)
         .set({ status: "failed", error: (e as Error).message })
         .where(eq(cvImportSessions.id, sess.id));
-      return reply
-        .code(422)
-        .send({
-          sessionId: sess.id,
-          status: "failed",
-          error: (e as Error).message,
-        });
+      return reply.code(422).send({
+        sessionId: sess.id,
+        status: "failed",
+        error: (e as Error).message,
+      });
     }
   });
 
@@ -171,17 +169,15 @@ export async function registerCv(app: FastifyInstance): Promise<void> {
           .map((b) => b.trim())
           .filter(Boolean);
         for (let i = 0; i < blocks.length; i++)
-          await db
-            .insert(experiences)
-            .values({
-              profileVersionId: version.id,
-              company: "Imported",
-              role:
-                (blocks[i]!.split(/\n/)[0] ?? "").slice(0, 200) ||
-                "Imported role",
-              bullets: [{ text: blocks[i]!, sourceType: "candidate_input" }],
-              position: i,
-            });
+          await db.insert(experiences).values({
+            profileVersionId: version.id,
+            company: "Imported",
+            role:
+              (blocks[i]!.split(/\n/)[0] ?? "").slice(0, 200) ||
+              "Imported role",
+            bullets: [{ text: blocks[i]!, sourceType: "candidate_input" }],
+            position: i,
+          });
       }
       if (sec.key === "education") {
         const blocks = sec.editedText
@@ -189,14 +185,12 @@ export async function registerCv(app: FastifyInstance): Promise<void> {
           .map((b) => b.trim())
           .filter(Boolean);
         for (const b of blocks)
-          await db
-            .insert(educations)
-            .values({
-              profileVersionId: version.id,
-              institution: b.split(/\n/)[0] ?? "Imported",
-              credential: null,
-              field: null,
-            });
+          await db.insert(educations).values({
+            profileVersionId: version.id,
+            institution: b.split(/\n/)[0] ?? "Imported",
+            credential: null,
+            field: null,
+          });
       }
     }
     await db

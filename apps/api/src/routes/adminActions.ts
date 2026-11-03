@@ -95,12 +95,10 @@ export async function registerAdminActions(
     const rawQuery = (req.query as { q?: unknown }).q;
     const query = typeof rawQuery === "string" ? rawQuery.trim() : "";
     if (query.length < 3 || query.length > 254)
-      return reply
-        .code(400)
-        .send({
-          error: "invalid_query",
-          message: "Provide an email search of 3–254 characters.",
-        });
+      return reply.code(400).send({
+        error: "invalid_query",
+        message: "Provide an email search of 3–254 characters.",
+      });
     const safeQuery = query.replace(/[\\%_]/g, "\\$&");
     const rows = await db
       .select({

@@ -66,12 +66,10 @@ export async function registerEmployerAuth(
     if (!invitation)
       return reply.code(400).send({ error: "invalid_invitation" });
     if (invitation.employerEmail.toLowerCase() !== body.email.toLowerCase()) {
-      return reply
-        .code(400)
-        .send({
-          error: "email_mismatch",
-          message: "Use the email address this invitation was sent to.",
-        });
+      return reply.code(400).send({
+        error: "email_mismatch",
+        message: "Use the email address this invitation was sent to.",
+      });
     }
 
     // Atomic: create employer + mark invitation used, all in one transaction

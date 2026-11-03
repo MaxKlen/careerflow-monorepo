@@ -169,32 +169,26 @@ async function main() {
       },
     ]);
     const eventAt = tomorrow();
-    await db
-      .insert(applicationEvents)
-      .values([
-        {
-          id: firstEventId,
-          applicationId,
-          kind: "interview_scheduled",
-          occurredAt: eventAt,
-          note: "M8 Synthetic Interview Title",
-          createdBy: candidateId,
-        },
-      ]);
-    await db
-      .insert(notificationPreferences)
-      .values({
-        workspaceId: candidateWorkspaceId,
+    await db.insert(applicationEvents).values([
+      {
+        id: firstEventId,
+        applicationId,
         kind: "interview_scheduled",
-        enabled: true,
-      });
-    await db
-      .insert(notificationPreferences)
-      .values({
-        workspaceId: candidateWorkspaceId,
-        kind: "application_deadline",
-        enabled: false,
-      });
+        occurredAt: eventAt,
+        note: "M8 Synthetic Interview Title",
+        createdBy: candidateId,
+      },
+    ]);
+    await db.insert(notificationPreferences).values({
+      workspaceId: candidateWorkspaceId,
+      kind: "interview_scheduled",
+      enabled: true,
+    });
+    await db.insert(notificationPreferences).values({
+      workspaceId: candidateWorkspaceId,
+      kind: "application_deadline",
+      enabled: false,
+    });
     await runNotificationsSchedulerTick();
     await runNotificationsSchedulerTick();
     let matching = await db
@@ -226,16 +220,14 @@ async function main() {
       disabledPref.status === 200,
       `preference save returned ${disabledPref.status}`,
     );
-    await db
-      .insert(applicationEvents)
-      .values({
-        id: suppressedEventId,
-        applicationId: suppressedApplicationId,
-        kind: "interview_scheduled",
-        occurredAt: new Date(eventAt.getTime() + 60_000),
-        note: "M8 Suppressed Interview",
-        createdBy: candidateId,
-      });
+    await db.insert(applicationEvents).values({
+      id: suppressedEventId,
+      applicationId: suppressedApplicationId,
+      kind: "interview_scheduled",
+      occurredAt: new Date(eventAt.getTime() + 60_000),
+      note: "M8 Suppressed Interview",
+      createdBy: candidateId,
+    });
     await runNotificationsSchedulerTick();
     matching = await db
       .select()

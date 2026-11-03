@@ -117,16 +117,14 @@ export async function registerApplications(
         .returning()
     )[0]!;
     if (sourceRequirements.length) {
-      await db
-        .insert(applicationRequirements)
-        .values(
-          sourceRequirements.map((r) => ({
-            applicationId: application.id,
-            text: r.text,
-            sourceRequirementId: r.id,
-            position: r.position,
-          })),
-        );
+      await db.insert(applicationRequirements).values(
+        sourceRequirements.map((r) => ({
+          applicationId: application.id,
+          text: r.text,
+          sourceRequirementId: r.id,
+          position: r.position,
+        })),
+      );
       const evidence = await db
         .select()
         .from(evidenceItems)
@@ -144,14 +142,12 @@ export async function registerApplications(
       for (const requirement of reqs) {
         const match = findPhraseMatches(requirement.text, snippets)[0];
         if (match)
-          await db
-            .insert(requirementEvidenceLinks)
-            .values({
-              requirementId: requirement.id,
-              evidenceId: null,
-              state: "phrase_match",
-              phrase: match.phrase,
-            });
+          await db.insert(requirementEvidenceLinks).values({
+            requirementId: requirement.id,
+            evidenceId: null,
+            state: "phrase_match",
+            phrase: match.phrase,
+          });
       }
     }
     return reply.code(201).send({ application });

@@ -522,14 +522,12 @@ export async function registerSettings(app: FastifyInstance): Promise<void> {
     const userId = req.user!.id;
     const id = randomUUID();
     const key = exportKey(id);
-    await db
-      .insert(dataExports)
-      .values({
-        id,
-        userId,
-        status: "pending",
-        expiresAt: new Date(Date.now() + EXPORT_TTL_MS),
-      });
+    await db.insert(dataExports).values({
+      id,
+      userId,
+      status: "pending",
+      expiresAt: new Date(Date.now() + EXPORT_TTL_MS),
+    });
     try {
       const data = await collectForUser(userId);
       await putObject(

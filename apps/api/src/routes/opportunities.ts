@@ -92,15 +92,13 @@ export async function registerOpportunities(
         .returning()
     )[0]!;
     if (body.requirementLines.length) {
-      await db
-        .insert(opportunityRequirements)
-        .values(
-          body.requirementLines.map((text, position) => ({
-            opportunityId: opportunity.id,
-            text,
-            position,
-          })),
-        );
+      await db.insert(opportunityRequirements).values(
+        body.requirementLines.map((text, position) => ({
+          opportunityId: opportunity.id,
+          text,
+          position,
+        })),
+      );
     }
     return reply.code(201).send({ opportunity });
   });

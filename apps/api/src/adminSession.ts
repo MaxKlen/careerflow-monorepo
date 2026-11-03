@@ -69,17 +69,15 @@ export async function audit(
   ip: string | null,
   userAgent: string | null,
 ): Promise<void> {
-  await db
-    .insert(auditLog)
-    .values({
-      actorAdminUserId,
-      action,
-      targetType,
-      targetId,
-      metadata,
-      ipAddress: ip,
-      userAgent,
-    });
+  await db.insert(auditLog).values({
+    actorAdminUserId,
+    action,
+    targetType,
+    targetId,
+    metadata,
+    ipAddress: ip,
+    userAgent,
+  });
 }
 
 export function adminOriginAllowed(

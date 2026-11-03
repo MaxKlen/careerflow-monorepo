@@ -144,12 +144,10 @@ export async function registerMeh(app: FastifyInstance): Promise<void> {
     if (body.mode === "connected") {
       const consent = await activeConsent(body.workspaceId);
       if (!consent)
-        return reply
-          .code(403)
-          .send({
-            error: "consent_required",
-            message: "Enable connected assistant consent first.",
-          });
+        return reply.code(403).send({
+          error: "consent_required",
+          message: "Enable connected assistant consent first.",
+        });
       if (!hasProvider()) {
         return reply.code(503).send({
           error: "provider_not_configured",
@@ -192,12 +190,10 @@ export async function registerMeh(app: FastifyInstance): Promise<void> {
         mode,
       );
     } catch {
-      return reply
-        .code(502)
-        .send({
-          error: "provider_error",
-          message: "The connected assistant provider request failed.",
-        });
+      return reply.code(502).send({
+        error: "provider_error",
+        message: "The connected assistant provider request failed.",
+      });
     }
 
     let conversationId = body.conversationId;

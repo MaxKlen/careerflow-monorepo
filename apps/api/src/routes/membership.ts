@@ -89,12 +89,10 @@ export async function registerMembership(app: FastifyInstance): Promise<void> {
     if (!owned) return reply.code(404).send({ error: "workspace_not_found" });
     const provider = getPaymentProvider();
     if (!provider.configured)
-      return reply
-        .code(501)
-        .send({
-          error: "payment_not_configured",
-          message: "No payment provider is configured in this deployment.",
-        });
+      return reply.code(501).send({
+        error: "payment_not_configured",
+        message: "No payment provider is configured in this deployment.",
+      });
     const session = await provider.startCheckout(
       body.workspaceId,
       body.plan,

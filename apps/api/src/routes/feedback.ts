@@ -25,11 +25,9 @@ export async function registerFeedback(app: FastifyInstance): Promise<void> {
         })
         .returning()
     )[0]!;
-    return reply
-      .code(201)
-      .send({
-        feedback: { id: row.id, status: row.status, createdAt: row.createdAt },
-      });
+    return reply.code(201).send({
+      feedback: { id: row.id, status: row.status, createdAt: row.createdAt },
+    });
   });
 
   app.get("/", async (req) => {
