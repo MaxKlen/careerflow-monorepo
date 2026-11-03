@@ -12,10 +12,7 @@ test("M11 automated invitation and employer projection flow (not the visible wal
     "M11 automated flow runs only in the database-backed CI job.",
   );
 
-  async function api(
-    path: string,
-    init: RequestInit & { json?: unknown } = {},
-  ) {
+  async function api(path: string, init: RequestInit & { json?: unknown } = {}) {
     const headers = new Headers(init.headers);
     if (init.json !== undefined) {
       headers.set("content-type", "application/json");
@@ -155,9 +152,7 @@ test("M11 automated invitation and employer projection flow (not the visible wal
 
   await test.step("7. Candidate revokes accepted employer access", async () => {
     const candidatePage = await page.context().newPage();
-    await candidatePage.goto(
-      `${candidateOrigin}/applications/${applicationId}`,
-    );
+    await candidatePage.goto(`${candidateOrigin}/applications/${applicationId}`);
     const revokeButton = candidatePage.getByRole("button", {
       name: "Revoke employer access",
     });
