@@ -67,8 +67,7 @@ test("M11 automated invitation and employer projection flow (not the visible wal
     json: { name: "M11 Workspace", kind: "personal" },
   });
   expect(workspace.response.status).toBe(201);
-  const workspaceId =
-    workspace.body?.workspace?.id ?? workspace.body?.id;
+  const workspaceId = workspace.body?.workspace?.id ?? workspace.body?.id;
   expect(workspaceId).toBeDefined();
 
   const opportunity = await api("/opportunities", {
