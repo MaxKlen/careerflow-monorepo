@@ -48,7 +48,7 @@ This document is the source-grounded target for the owner-run visible walkthroug
 
 **URL:** Candidate application page at `http://localhost:3000/applications/<applicationId>`.
 
-**Action:** Use the invitation list’s **revoke** control and then refresh the employer projection. The current UI only renders the revoke button while the invitation is pending (`usedAt` is null). If the invitation has already been accepted, the UI does not expose that button even though the API route can update `revokedAt`; this is a known source-level walkthrough risk requiring owner observation and, if confirmed as a product requirement, a scoped code fix in a later cycle.
+**Action:** Use the invitation list’s **Revoke employer access** control for the accepted invitation and then refresh the employer projection. Pending invitations retain the shorter **Revoke** label. Both controls call the same candidate revoke route; the accepted-invitation control is covered by the browser regression flow and API integration assertions.
 
 **Expected visible outcome:** After a visible revoke action, the candidate invitation status becomes `revoked`. The employer projection becomes inaccessible or disappears from the employer application list after refresh.
 
@@ -56,7 +56,7 @@ This document is the source-grounded target for the owner-run visible walkthroug
 
 **Expected database state:** The invitation row has `revokedAt` set. Employer authorization filters revoked invitations, so the application is no longer projectable.
 
-**Common failure modes:** No revoke button after acceptance is the source-level UI limitation described above; `403 invalid_origin` indicates an incorrect candidate origin; a successful delete followed by a still-visible projection is a data-isolation defect; a failed delete with a missing invitation ID indicates stale candidate UI state.
+**Common failure modes:** `403 invalid_origin` indicates an incorrect candidate origin; a successful delete followed by a still-visible projection is a data-isolation defect; a failed delete with a missing invitation ID indicates stale candidate UI state; absence of **Revoke employer access** after acceptance is a regression in the corrected UI.
 
 ## Step 5 — Employer sees the updated projection state
 

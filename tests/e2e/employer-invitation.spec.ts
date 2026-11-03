@@ -49,6 +49,16 @@ test("M11 automated invitation and employer projection flow (not the visible wal
   });
   expect(signup.response.status).toBe(200);
   const candidateCookie = signup.cookie;
+  const candidateSession = candidateCookie.replace(/^cf_session=/, "");
+  const candidateUrl = new URL(candidateOrigin);
+  await page.context().addCookies([
+    {
+      name: "cf_session",
+      value: candidateSession,
+      domain: candidateUrl.hostname,
+      path: "/",
+    },
+  ]);
 
   const workspace = await api("/workspaces", {
     method: "POST",
@@ -118,5 +128,25 @@ test("M11 automated invitation and employer projection flow (not the visible wal
   await test.step("6. Verify the projected application remains scoped", async () => {
     await expect(page.getByText("CareerFlow Test Co")).toBeVisible();
     await expect(page.getByText(/Requirements|Evidence/)).toBeVisible();
+  });
+
+  await test.step("7. Candidate revokes accepted employer access", async () => {
+    const candidatePage = await page.context().newPage();
+    await candidatePage.goto(
+      `${candidateOrigin}/applications/${applicationId}`,
+    );
+    const revokeButton = candidatePage.getByRole("button", {
+      name: "Revoke employer access",
+    });
+    await expect(revokeButton).toBeVisible();
+    await revokeButton.click();
+    await expect(candidatePage.getByText(/revoked/)).toBeVisible();
+
+    const projectionAfterRevoke = await api(
+      `/employer/applications/${applicationId}`,
+      { headers: { cookie: employerSignup.cookie, origin: employerOrigin } },
+    );
+    expect(projectionAfterRevoke.response.status).toBe(404);
+    await candidatePage.close();
   });
 });

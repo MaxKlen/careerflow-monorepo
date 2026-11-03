@@ -204,6 +204,7 @@ await run(
       201,
       JSON.stringify(invitation.body),
     );
+    const invitationId = invitation.body.invitation.id;
     const token = new URL(invitation.body.invitationUrl).hash.replace(
       /^#token=/,
       "",
@@ -238,6 +239,33 @@ await run(
       { cookie: employerSignup.cookie, origin: employerOrigin },
     );
     assert.equal(detail.response.status, 200, JSON.stringify(detail.body));
+
+    const revoked = await request(
+      `/applications/${application.body.application.id}/invitations/${invitationId}`,
+      {
+        method: "DELETE",
+        cookie: candidate.cookie,
+        origin: candidateOrigin,
+      },
+    );
+    assert.equal(revoked.response.status, 200, JSON.stringify(revoked.body));
+
+    const afterRevokeList = await request("/employer/applications", {
+      cookie: employerSignup.cookie,
+      origin: employerOrigin,
+    });
+    assert.equal(
+      afterRevokeList.response.status,
+      200,
+      JSON.stringify(afterRevokeList.body),
+    );
+    assert.equal(afterRevokeList.body.applications.length, 0);
+
+    const afterRevokeDetail = await request(
+      `/employer/applications/${application.body.application.id}`,
+      { cookie: employerSignup.cookie, origin: employerOrigin },
+    );
+    assert.equal(afterRevokeDetail.response.status, 404);
   },
 );
 
