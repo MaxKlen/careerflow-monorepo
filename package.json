@@ -7,6 +7,12 @@
   },
   "scripts": {
     "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "prettier --check package.json pnpm-workspace.yaml .github/workflows/prettier-fix.yml",
+    "test": "vitest run tests/config/*.test.ts",
+    "test:integration": "node tests/integration/api.integration.mjs",
+    "test:e2e": "playwright test",
+    "build": "pnpm --filter @careerflow/web build && pnpm --filter @careerflow/employer build && pnpm --filter @careerflow/admin build",
+    "verify:production-config": "node scripts/verify-production-config.mjs",
     "dev:api": "pnpm --filter @careerflow/api dev",
     "dev:web": "pnpm --filter @careerflow/web dev",
     "db:push": "pnpm --filter @careerflow/db push",
@@ -15,11 +21,16 @@
     "smoke": "bash scripts/smoke.sh",
     "up": "docker compose -f docker/compose.yml up -d",
     "down": "docker compose -f docker/compose.yml down",
+    "walkthrough:up": "bash scripts/walkthrough-up.sh",
+    "walkthrough:seed": "bash scripts/walkthrough-seed.sh",
+    "walkthrough:down": "bash scripts/walkthrough-down.sh",
     "dev:admin": "pnpm --filter @careerflow/admin dev",
     "dev:employer": "pnpm --filter @careerflow/employer dev"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "prettier": "^3.9.10",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }

@@ -1,7 +1,12 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-export const FEEDBACK_KINDS = ['bug', 'suggestion', 'question', 'concern'] as const;
-export type FeedbackKind = typeof FEEDBACK_KINDS[number];
+export const FEEDBACK_KINDS = [
+  "bug",
+  "suggestion",
+  "question",
+  "concern",
+] as const;
+export type FeedbackKind = (typeof FEEDBACK_KINDS)[number];
 
 export const SubmitFeedbackInput = z.object({
   kind: z.enum(FEEDBACK_KINDS),
@@ -13,7 +18,9 @@ export const SubmitFeedbackInput = z.object({
 export type SubmitFeedbackInput = z.infer<typeof SubmitFeedbackInput>;
 
 export const UpdateFeedbackStatusInput = z.object({
-  status: z.enum(['open', 'acknowledged', 'resolved', 'closed']),
+  status: z.enum(["open", "acknowledged", "resolved", "closed"]),
   adminNotes: z.string().max(5000).optional(),
 });
-export type UpdateFeedbackStatusInput = z.infer<typeof UpdateFeedbackStatusInput>;
+export type UpdateFeedbackStatusInput = z.infer<
+  typeof UpdateFeedbackStatusInput
+>;

@@ -65,15 +65,16 @@ M3 adds no dependency and does not implement PDF import/export. PDF remains defe
 bash scripts/reset.sh && pnpm db:push
 ```
 
-
 ## M4 — PDF import
 
 ### What changed
+
 - `apps/api/src/extractText.ts` handles PDF via `unpdf` (which wraps `pdfjs-dist`)
 - `apps/web/src/app/(app)/cv/import/page.tsx` accepts .pdf in the file picker
 - No new routes or schema changes. The API dependency manifest/lockfile and this testing document are also updated; the runner, backups, fixtures, and screenshots are verification artifacts.
 
 ### Gate
+
 1. Obtain a text-based PDF (any PDF with selectable text; NOT a scanned image)
 2. `/cv/import` → upload → expect sections parsed
 3. Confirm sections → profile version created and persisted
@@ -81,11 +82,13 @@ bash scripts/reset.sh && pnpm db:push
 5. Regression: .txt and .md still parse as before
 
 ### Failure modes (all correct behavior, not bugs)
+
 - **Scanned/image PDF** → 422 with `PDF extraction failed: No selectable text found`. We do not OCR.
 - **Encrypted PDF** → 422 with `PDF extraction failed: <unpdf error>`. We do not prompt for passwords.
 - **Multi-column layout** → text order may jumble. Documented limitation.
 
 ### If unpdf fails at install or run
+
 - Drop it: `pnpm --filter @careerflow/api remove unpdf`
 - Replace with `pdfjs-dist/legacy/build/pdf.mjs` (documented in conversation)
 - Report the error verbatim
@@ -107,7 +110,6 @@ bash scripts/reset.sh && pnpm db:push
 Evidence is saved under `local-only evidence (omitted from this repository)`. Recreate the synthetic fixtures with `python3 artifacts/create-m4-fixtures.py` using the already-installed local PDF/image libraries.
 
 Final library check: `/profile` displayed **M4 TXT browser regression** and **M4 PDF browser gate** alongside the three existing profile versions. The browser is left on that screen. Final recursive typecheck passed again; output is in `local-only evidence (omitted from this repository)`. Final screen: `local-only evidence (omitted from this repository)`.
-
 
 ## M5 — MEH connected mode
 
@@ -154,6 +156,7 @@ The system prompt is a guardrail, not a guarantee: MEH can still hallucinate or 
 Screenshots: `local-only evidence (omitted from this repository)`, `local-only evidence (omitted from this repository)`, `local-only evidence (omitted from this repository)`, and `local-only evidence (omitted from this repository)`.
 
 <!-- M9 TESTING START -->
+
 ## M9 — settings, privacy/data, deletion, help, feedback, and adapters
 
 ### Run the single script
@@ -200,14 +203,14 @@ A passing API verifier is not a substitute for these browser gates. Do not call 
 - Final preservation verification compared all 34 original tables. Thirty-three whole-table count/content fingerprints are identical; all 20 original audit rows are also unchanged. Six intentional test audit events were appended and retained with the deleted synthetic admin's actor link removed. Existing totals remain 21 candidates, 22 workspaces, and 7 applications. All temporary M9 candidate/admin/feedback rows and the generated export rows are gone. Receipt: `local-only evidence (omitted from this repository)`.
 - No database reset or seed was run, no real account was deleted, no payment rail was called, and transactional email remained disabled. Actual SMTP delivery was not tested. There is no Git metadata in this workspace; source backups are under `local-only evidence (omitted from this repository)` rather than a Git commit.
 
-| Mandatory manual gate | Result in this run |
-| --- | --- |
-| Settings name persistence and password sign-out/sign-in | **BLOCKED / not passed** — corresponding API checks pass, but no browser settings edit was completed. |
-| Settings ready export, same-origin download, opening downloaded JSON | **BLOCKED / not passed** — API JSON/attachment checks pass; visible download path remains unverified. |
-| Help: six topics and “what this is not” | **BLOCKED / not passed** — browser walkthrough not completed. |
-| Feedback: submit/list plus admin UI and audit | **BLOCKED / not passed** — dedicated API/audit checks pass; candidate/admin UI flow remains unverified. |
-| Membership plans/no-cost label/no provider checkout | **BLOCKED / not passed** — API not-configured/501 checks pass; browser render/control gate remains unverified. |
-| Throwaway deletion through visible settings form | **BLOCKED / not passed** — API deletion/session/file cleanup passes; destructive UI flow was not completed. |
+| Mandatory manual gate                                                | Result in this run                                                                                             |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Settings name persistence and password sign-out/sign-in              | **BLOCKED / not passed** — corresponding API checks pass, but no browser settings edit was completed.          |
+| Settings ready export, same-origin download, opening downloaded JSON | **BLOCKED / not passed** — API JSON/attachment checks pass; visible download path remains unverified.          |
+| Help: six topics and “what this is not”                              | **BLOCKED / not passed** — browser walkthrough not completed.                                                  |
+| Feedback: submit/list plus admin UI and audit                        | **BLOCKED / not passed** — dedicated API/audit checks pass; candidate/admin UI flow remains unverified.        |
+| Membership plans/no-cost label/no provider checkout                  | **BLOCKED / not passed** — API not-configured/501 checks pass; browser render/control gate remains unverified. |
+| Throwaway deletion through visible settings form                     | **BLOCKED / not passed** — API deletion/session/file cleanup passes; destructive UI flow was not completed.    |
 
 The browser did complete one new synthetic signup and showed its authenticated home page. Subsequent screen capture/foreground activation failed and browser execution then timed out even on read-only tab access, while API/web/admin HTTP checks remained healthy. No outcome screenshot could be saved. The synthetic browser account was then deleted through the authenticated API, its session returned 401, and its workspace was verified absent. Do not count that fallback as a passing UI-delete test.
 
@@ -217,14 +220,14 @@ The local API, candidate web app, and admin app remain running on ports 4000, 30
 
 **Current outcome: browser access became unavailable again after Gates 1–4 passed. M9 remains open; Gates 5–6 are not passed. M10 was neither started nor designed.** This retry supersedes the earlier all-blocked browser table above, not the automated verification history.
 
-| Mandatory manual gate | Current retry result |
-| --- | --- |
-| 1. Settings name persistence and password reauthentication | **PASS** — saved name survived Control+Shift+R; visible `Password changed.`; new password reached `/home` after sign-out. |
-| 2. Export ready after reload, same-origin browser download, opened JSON | **PASS** — completed browser download from `/settings/export/4de57d57-e893-4193-9380-1a7f23e68156`; opened JSON includes `user`, `workspaces`, and `sharedCatalogEntries` with the required shared-catalog note. |
-| 3. Help topics and limits | **PASS** — all six topics plus `What CareerFlow is not` rendered; console returned zero errors with zero dropped messages. |
-| 4. Candidate/admin feedback and audit | **PASS** — synthetic Bug subject `M9 UI gate` submitted and listed; admin status changed to `acknowledged` and survived reload; `/audit` visibly contained `admin.view_feedback` and `admin.update_feedback` with `{"status":"acknowledged"}`. |
-| 5. Membership plans and absence of checkout controls | **BLOCKED / not run** — controller failed before membership navigation. |
-| 6. Fresh throwaway deletion through visible settings | **BLOCKED / not run** — no deletion-gate account was created and no visible delete form was submitted. |
+| Mandatory manual gate                                                   | Current retry result                                                                                                                                                                                                                           |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Settings name persistence and password reauthentication              | **PASS** — saved name survived Control+Shift+R; visible `Password changed.`; new password reached `/home` after sign-out.                                                                                                                      |
+| 2. Export ready after reload, same-origin browser download, opened JSON | **PASS** — completed browser download from `/settings/export/4de57d57-e893-4193-9380-1a7f23e68156`; opened JSON includes `user`, `workspaces`, and `sharedCatalogEntries` with the required shared-catalog note.                               |
+| 3. Help topics and limits                                               | **PASS** — all six topics plus `What CareerFlow is not` rendered; console returned zero errors with zero dropped messages.                                                                                                                     |
+| 4. Candidate/admin feedback and audit                                   | **PASS** — synthetic Bug subject `M9 UI gate` submitted and listed; admin status changed to `acknowledged` and survived reload; `/audit` visibly contained `admin.view_feedback` and `admin.update_feedback` with `{"status":"acknowledged"}`. |
+| 5. Membership plans and absence of checkout controls                    | **BLOCKED / not run** — controller failed before membership navigation.                                                                                                                                                                        |
+| 6. Fresh throwaway deletion through visible settings                    | **BLOCKED / not run** — no deletion-gate account was created and no visible delete form was submitted.                                                                                                                                         |
 
 At 23:40:23 +02:00 the next browser cell timed out on the first operation, capturing the already inspected admin audit page: `In-app Browser JavaScript cancelled or timed out: context deadline exceeded`, followed by `BROWSER_NOT_READY`. No audit screenshot path was returned. Browser testing stopped with no retry or alternate-browser workaround. No application UI failure was observed; this is a browser-access blocker.
 

@@ -1,10 +1,16 @@
-import { z } from 'zod';
-import { APP_STAGES, REQ_EVIDENCE_STATES } from '../enums.js';
+import { z } from "zod";
+import { APP_STAGES, REQ_EVIDENCE_STATES } from "../enums.js";
 
-export const CreateApplicationInput = z.object({ opportunityId: z.string().uuid().optional() });
+export const CreateApplicationInput = z.object({
+  opportunityId: z.string().uuid().optional(),
+});
 export type CreateApplicationInput = z.infer<typeof CreateApplicationInput>;
-export const UpdateApplicationStageInput = z.object({ stage: z.enum(APP_STAGES) });
-export type UpdateApplicationStageInput = z.infer<typeof UpdateApplicationStageInput>;
+export const UpdateApplicationStageInput = z.object({
+  stage: z.enum(APP_STAGES),
+});
+export type UpdateApplicationStageInput = z.infer<
+  typeof UpdateApplicationStageInput
+>;
 export const LinkEvidenceInput = z.object({
   requirementId: z.string().uuid(),
   evidenceId: z.string().uuid().optional(),

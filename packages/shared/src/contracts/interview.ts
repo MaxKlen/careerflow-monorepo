@@ -1,7 +1,13 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-export const INTERVIEW_QUESTION_CATEGORIES = ['behavioral', 'situational', 'role', 'candidate_questions'] as const;
-export type InterviewQuestionCategory = typeof INTERVIEW_QUESTION_CATEGORIES[number];
+export const INTERVIEW_QUESTION_CATEGORIES = [
+  "behavioral",
+  "situational",
+  "role",
+  "candidate_questions",
+] as const;
+export type InterviewQuestionCategory =
+  (typeof INTERVIEW_QUESTION_CATEGORIES)[number];
 
 export const InterviewQuestion = z.object({
   id: z.string(),

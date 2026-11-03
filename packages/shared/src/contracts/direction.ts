@@ -1,8 +1,15 @@
-import { z } from 'zod';
-import { ARRANGEMENTS } from '../enums.js';
-import { MEA_CURRENCIES } from './compensation.js';
+import { z } from "zod";
+import { ARRANGEMENTS } from "../enums.js";
+import { MEA_CURRENCIES } from "./compensation.js";
 
-export const EntryPoint = z.enum(['exploring', 'new_role', 'returning', 'changing', 'advancing', 'developing']);
+export const EntryPoint = z.enum([
+  "exploring",
+  "new_role",
+  "returning",
+  "changing",
+  "advancing",
+  "developing",
+]);
 
 export const DirectionConstraints = z.object({
   locations: z.array(z.string().max(100)).default([]),

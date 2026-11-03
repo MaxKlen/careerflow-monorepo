@@ -21,9 +21,13 @@ Requirements: Node.js 22 or newer, pnpm 9.12.0, and Docker Compose.
 2. Install dependencies with `pnpm install`.
 3. Start local dependencies with `pnpm up`.
 4. In separate terminals, run the service you need with `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:admin`, or `pnpm dev:employer`.
-5. Use `pnpm typecheck` and `pnpm smoke` for the repository-level checks. See `TESTING.md` for milestone-specific gates and manual verification notes.
+5. Use `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, and `pnpm test:e2e` for the repository-level checks. Use `pnpm smoke` only after an isolated PostgreSQL/API/web environment is running. See `TESTING.md` for milestone-specific gates and manual verification notes.
 
 Do not put production credentials in `.env.example` or commit local `.env` files.
+
+## Preview and production readiness
+
+CareerFlow is a dynamic full-stack application, not a static export: the candidate, employer, and admin Next.js apps depend on runtime API routes, cookie sessions, PostgreSQL, and upload storage. See `docs/zero-cost-launch-readiness.md` for the free-tier preview interpretation, `docs/production-runbook.md` for deployment prerequisites, and `docs/privacy-and-retention-draft.md` for the unapproved governance draft. No deployment, legal approval, independent audit, or device acceptance is implied by these documents.
 
 ## Milestone status
 
