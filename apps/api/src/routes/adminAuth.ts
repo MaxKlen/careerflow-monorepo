@@ -18,12 +18,17 @@ import { env } from "../env.js";
 
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_FAILURES = 5;
-const signInAttempts = new Map<string, { count: number; resetAt: number }>();
-const signUpAttempts = new Map<string, { count: number; resetAt: number }>();
-function rateLimited(
-  map: Map<string, { count: number; resetAt: number }>,
-  key: string,
-): boolean {
+const MAX_TRACKED_IPS = 5_000;
+type Attempt = { count: number; resetAt: number };
+const signInAttempts = new Map<string, Attempt>();
+const signUpAttempts = new Map<string, Attempt>();
+
+// Avoid hashing a new dummy password on every unknown-account sign-in.
+const DUMMY_PASSWORD_HASH = await hashPassword(
+  "careerflow-nonexistent-admin-dummy-password",
+);
+
+function rateLimited(map: Map<string, Attempt>, key: string): boolean {
   const now = Date.now();
   const current = map.get(key);
   if (!current || current.resetAt <= now) {
@@ -32,19 +37,29 @@ function rateLimited(
   }
   return current.count >= MAX_FAILURES;
 }
-function recordFailure(
-  map: Map<string, { count: number; resetAt: number }>,
-  key: string,
-): void {
+
+function recordFailure(map: Map<string, Attempt>, key: string): void {
   const now = Date.now();
   const current = map.get(key);
-  if (!current || current.resetAt <= now)
+  if (!current || current.resetAt <= now) {
     map.set(key, { count: 1, resetAt: now + WINDOW_MS });
-  else current.count++;
-  if (map.size > 5000)
-    for (const [entry, value] of map)
+  } else {
+    current.count++;
+  }
+
+  // Bound memory if a large number of distinct client IPs hit these endpoints.
+  if (map.size > MAX_TRACKED_IPS) {
+    for (const [entry, value] of map) {
       if (value.resetAt <= now) map.delete(entry);
+    }
+    while (map.size > MAX_TRACKED_IPS) {
+      const oldest = map.keys().next().value;
+      if (oldest === undefined) break;
+      map.delete(oldest);
+    }
+  }
 }
+
 function userAgent(req: { headers: Record<string, unknown> }): string | null {
   const value = req.headers["user-agent"];
   return typeof value === "string" ? value : null;
@@ -135,12 +150,10 @@ export async function registerAdminAuth(app: FastifyInstance): Promise<void> {
       .from(adminUsers)
       .where(eq(adminUsers.email, body.email))
       .limit(1);
-    const passwordOk = rows[0]
-      ? await verifyPassword(body.password, rows[0].passwordHash)
-      : await verifyPassword(
-          body.password,
-          await hashPassword("careerflow-nonexistent-admin-dummy-password"),
-        );
+    const passwordOk = await verifyPassword(
+      body.password,
+      rows[0]?.passwordHash ?? DUMMY_PASSWORD_HASH,
+    );
     if (!rows[0] || !passwordOk) {
       recordFailure(signInAttempts, ip);
       return reply.code(401).send({ error: "invalid_credentials" });
