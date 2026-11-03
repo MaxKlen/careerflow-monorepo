@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const ChangePasswordInput = z.object({
   currentPassword: z.string().min(1).max(200),

@@ -1,6 +1,6 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-export const AdminRole = z.enum(['owner', 'support', 'viewer']);
+export const AdminRole = z.enum(["owner", "support", "viewer"]);
 export type AdminRole = z.infer<typeof AdminRole>;
 
 export const AdminSignupInput = z.object({

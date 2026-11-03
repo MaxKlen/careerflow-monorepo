@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const GrowthGoalInput = z.object({
   title: z.string().min(1).max(200),
@@ -8,8 +8,13 @@ export const GrowthGoalInput = z.object({
 });
 export type GrowthGoalInput = z.infer<typeof GrowthGoalInput>;
 
-export const GROWTH_ENTRY_KINDS = ['achievement', 'reflection', 'conversation', 'learning'] as const;
-export type GrowthEntryKind = typeof GROWTH_ENTRY_KINDS[number];
+export const GROWTH_ENTRY_KINDS = [
+  "achievement",
+  "reflection",
+  "conversation",
+  "learning",
+] as const;
+export type GrowthEntryKind = (typeof GROWTH_ENTRY_KINDS)[number];
 
 export const GrowthEntryInput = z.object({
   goalId: z.string().uuid().optional(),

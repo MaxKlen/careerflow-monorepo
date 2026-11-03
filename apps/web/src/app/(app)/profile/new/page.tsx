@@ -1,1 +1,25 @@
-import CreateForm from '@/components/CreateForm'; export default function NewProfile(){return <CreateForm title="New profile version" endpoint="/profiles/{workspaceId}" redirectTo="/profile/:id" fields={[{name:'label',label:'Label',required:true,placeholder:'Product manager track'},{name:'headline',label:'Headline'},{name:'summary',label:'Summary (your own words)',type:'textarea'},{name:'targetRoles',label:'Target roles (comma-separated)'}]}/>}
+import CreateForm from "@/components/CreateForm";
+export default function NewProfile() {
+  return (
+    <CreateForm
+      title="New profile version"
+      endpoint="/profiles/{workspaceId}"
+      redirectTo="/profile/:id"
+      fields={[
+        {
+          name: "label",
+          label: "Label",
+          required: true,
+          placeholder: "Product manager track",
+        },
+        { name: "headline", label: "Headline" },
+        {
+          name: "summary",
+          label: "Summary (your own words)",
+          type: "textarea",
+        },
+        { name: "targetRoles", label: "Target roles (comma-separated)" },
+      ]}
+    />
+  );
+}

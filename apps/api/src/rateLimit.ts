@@ -14,7 +14,9 @@ const cleanup = setInterval(() => {
 }, WINDOW_MS);
 cleanup.unref();
 
-export function checkRateLimit(key: string): { ok: true } | { ok: false; retryAfterMs: number } {
+export function checkRateLimit(
+  key: string,
+): { ok: true } | { ok: false; retryAfterMs: number } {
   const now = Date.now();
   const b = buckets.get(key);
   if (!b || now - b.windowStart >= WINDOW_MS) {

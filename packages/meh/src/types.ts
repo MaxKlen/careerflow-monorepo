@@ -5,10 +5,10 @@ export interface MehRequest {
 }
 
 export interface MehResponse {
-  kind: 'suggestion' | 'navigation' | 'refusal';
+  kind: "suggestion" | "navigation" | "refusal";
   body: string;
   sources: string[];
-  modeKind: 'offline' | 'connected';
+  modeKind: "offline" | "connected";
 }
 
 export interface MehProvider {
