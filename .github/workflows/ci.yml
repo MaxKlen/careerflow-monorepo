@@ -2,8 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - chore/zero-cost-launch-readiness
   pull_request:
+    branches:
+      - main
 
 concurrency:
   group: careerflow-ci-${{ github.workflow }}-${{ github.ref }}
