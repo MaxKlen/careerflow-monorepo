@@ -1,10 +1,11 @@
 import { randomBytes, createHash } from "node:crypto";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { db } from "./db.js";
 import { employerSessions, employerUsers } from "@careerflow/db";
 
 const COOKIE_NAME = "cf_employer_session";
 const TTL_MS = 8 * 60 * 60 * 1000;
+export const EMPLOYER_IMPERSONATION_TTL_MS = 15 * 60 * 1000;
 
 export function hashEmployerToken(raw: string): string {
   return createHash("sha256").update(raw).digest("hex");
@@ -24,6 +25,25 @@ export async function createEmployerSession(
   return raw;
 }
 
+export async function createEmployerImpersonationSession(
+  employerUserId: string,
+  adminUserId: string,
+  reason: string,
+  userAgent: string | null,
+): Promise<string> {
+  const raw = randomBytes(32).toString("base64url");
+  await db.insert(employerSessions).values({
+    employerUserId,
+    tokenHash: hashEmployerToken(raw),
+    userAgent,
+    expiresAt: new Date(Date.now() + EMPLOYER_IMPERSONATION_TTL_MS),
+    isImpersonation: true,
+    impersonatorAdminUserId: adminUserId,
+    impersonationReason: reason,
+  });
+  return raw;
+}
+
 export async function destroyEmployerSession(raw: string): Promise<void> {
   await db
     .delete(employerSessions)
@@ -37,6 +57,9 @@ export async function findEmployerSession(raw: string) {
       employerUserId: employerUsers.id,
       email: employerUsers.email,
       companyName: employerUsers.companyName,
+      isImpersonation: employerSessions.isImpersonation,
+      impersonatorAdminUserId: employerSessions.impersonatorAdminUserId,
+      impersonationReason: employerSessions.impersonationReason,
     })
     .from(employerSessions)
     .innerJoin(
@@ -47,6 +70,7 @@ export async function findEmployerSession(raw: string) {
       and(
         eq(employerSessions.tokenHash, hashEmployerToken(raw)),
         gt(employerSessions.expiresAt, new Date()),
+        isNull(employerUsers.suspendedAt),
       ),
     )
     .limit(1);

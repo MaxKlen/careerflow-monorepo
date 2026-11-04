@@ -1,3 +1,5 @@
+import Link from "next/link";
+import EmployerImpersonationBanner from "@/components/ImpersonationBanner";
 export const metadata = { title: "CareerFlow for Employers" };
 export default function RootLayout({
   children,
@@ -26,17 +28,24 @@ export default function RootLayout({
           }}
         >
           <strong>CareerFlow for Employers</strong>
-          <a
-            href="/login"
+          <Link
+            href="/billing"
             style={{
               color: "#94a3b8",
               textDecoration: "none",
               marginInlineStart: "auto",
             }}
           >
+            Billing
+          </Link>
+          <Link
+            href="/login"
+            style={{ color: "#94a3b8", textDecoration: "none" }}
+          >
             Sign in
-          </a>
+          </Link>
         </nav>
+        <EmployerImpersonationBanner />
         <main style={{ padding: 24, maxWidth: 1000, margin: "0 auto" }}>
           {children}
         </main>

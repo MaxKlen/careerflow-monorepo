@@ -8,8 +8,10 @@
   "scripts": {
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "prettier --check package.json pnpm-workspace.yaml .github/workflows/prettier-fix.yml",
-    "test": "vitest run tests/config/*.test.ts",
+    "test": "vitest run tests/config/*.test.ts apps/api/src/*.test.ts",
     "test:integration": "node tests/integration/api.integration.mjs",
+    "test:integration:phase2": "node tests/integration/phase2-demo.integration.mjs",
+    "test:integration:demo-seed": "pnpm --filter @careerflow/api exec tsx src/demoSeedPersistenceSmoke.ts",
     "test:e2e": "playwright test",
     "build": "pnpm --filter @careerflow/web build && pnpm --filter @careerflow/employer build && pnpm --filter @careerflow/admin build",
     "verify:production-config": "node scripts/verify-production-config.mjs",
@@ -25,7 +27,13 @@
     "walkthrough:seed": "bash scripts/walkthrough-seed.sh",
     "walkthrough:down": "bash scripts/walkthrough-down.sh",
     "dev:admin": "pnpm --filter @careerflow/admin dev",
-    "dev:employer": "pnpm --filter @careerflow/employer dev"
+    "dev:employer": "pnpm --filter @careerflow/employer dev",
+    "demo:seed": "pnpm --filter @careerflow/api demo:seed",
+    "demo:reset": "pnpm --filter @careerflow/api demo:reset",
+    "demo:up": "bash scripts/demo-docker.sh up --build -d",
+    "demo:tunnel-prepare": "bash scripts/demo-tunnel.sh prepare",
+    "demo:tunnel-up": "bash scripts/demo-tunnel.sh start",
+    "demo:down": "bash scripts/demo-docker.sh --profile gateway down"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",

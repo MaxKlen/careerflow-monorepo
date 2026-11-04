@@ -9,7 +9,9 @@ import {
   pgEnum,
   index,
   uniqueIndex,
+  check,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const workspaceKind = pgEnum("workspace_kind", ["personal", "sample"]);
 export const sourceType = pgEnum("source_type", [
@@ -49,6 +51,7 @@ export const users = pgTable("users", {
   locale: text("locale").notNull().default("en"),
   timezone: text("timezone").notNull().default("UTC"),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  suspendedAt: timestamp("suspended_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -62,6 +65,12 @@ export const sessions = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     tokenHash: text("token_hash").notNull().unique(),
+    impersonatorAdminUserId: uuid("impersonator_admin_user_id").references(
+      () => adminUsers.id,
+      { onDelete: "set null" },
+    ),
+    isImpersonation: boolean("is_impersonation").notNull().default(false),
+    impersonationReason: text("impersonation_reason"),
     userAgent: text("user_agent"),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -593,6 +602,7 @@ export const adminUsers = pgTable("admin_users", {
   passwordHash: text("password_hash").notNull(),
   displayName: text("display_name"),
   role: adminRoleEnum("role").notNull().default("owner"),
+  suspendedAt: timestamp("suspended_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -777,7 +787,12 @@ export const subscriptions = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => ({ wsIdx: index("subscriptions_workspace_idx").on(t.workspaceId) }),
+  (t) => ({
+    wsIdx: index("subscriptions_workspace_idx").on(t.workspaceId),
+    oneCurrent: uniqueIndex("subscriptions_one_current_per_workspace")
+      .on(t.workspaceId)
+      .where(sql`${t.status} <> 'canceled'`),
+  }),
 );
 
 // M11: employer workspace — separate auth domain.
@@ -786,6 +801,7 @@ export const employerUsers = pgTable("employer_users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   companyName: text("company_name"),
+  suspendedAt: timestamp("suspended_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -800,6 +816,12 @@ export const employerSessions = pgTable(
       .notNull()
       .references(() => employerUsers.id, { onDelete: "cascade" }),
     tokenHash: text("token_hash").notNull().unique(),
+    impersonatorAdminUserId: uuid("impersonator_admin_user_id").references(
+      () => adminUsers.id,
+      { onDelete: "set null" },
+    ),
+    isImpersonation: boolean("is_impersonation").notNull().default(false),
+    impersonationReason: text("impersonation_reason"),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     userAgent: text("user_agent"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -834,5 +856,116 @@ export const employerInvitations = pgTable(
   (t) => ({
     appIdx: index("employer_inv_app_idx").on(t.applicationId),
     empIdx: index("employer_inv_emp_idx").on(t.employerUserId),
+  }),
+);
+
+export const invoiceStatusEnum = pgEnum("billing_invoice_status", [
+  "open",
+  "paid",
+  "void",
+  "failed",
+]);
+
+export const employerSubscriptions = pgTable(
+  "employer_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    employerUserId: uuid("employer_user_id")
+      .notNull()
+      .references(() => employerUsers.id, { onDelete: "cascade" }),
+    plan: subscriptionPlanEnum("plan").notNull(),
+    status: subscriptionStatusEnum("status").notNull().default("active"),
+    provider: text("provider"),
+    externalId: text("external_id"),
+    currentPeriodStart: timestamp("current_period_start", {
+      withTimezone: true,
+    }),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    canceledAt: timestamp("canceled_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    userIdx: index("employer_subscriptions_user_idx").on(t.employerUserId),
+    oneCurrent: uniqueIndex("employer_subscriptions_one_current_per_user")
+      .on(t.employerUserId)
+      .where(sql`${t.status} <> 'canceled'`),
+  }),
+);
+
+export const billingInvoices = pgTable(
+  "billing_invoices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id").references(() => workspaces.id, {
+      onDelete: "cascade",
+    }),
+    employerUserId: uuid("employer_user_id").references(
+      () => employerUsers.id,
+      { onDelete: "cascade" },
+    ),
+    subscriptionId: uuid("subscription_id").references(() => subscriptions.id, {
+      onDelete: "set null",
+    }),
+    employerSubscriptionId: uuid("employer_subscription_id").references(
+      () => employerSubscriptions.id,
+      { onDelete: "set null" },
+    ),
+    amountCents: integer("amount_cents").notNull(),
+    currency: text("currency").notNull().default("USD"),
+    status: invoiceStatusEnum("status").notNull().default("paid"),
+    provider: text("provider").notNull(),
+    externalInvoiceId: text("external_invoice_id").notNull().unique(),
+    description: text("description").notNull(),
+    isSynthetic: boolean("is_synthetic").notNull().default(true),
+    periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+    periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+    issuedAt: timestamp("issued_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    exactlyOneOwner: check(
+      "billing_invoice_exactly_one_owner",
+      sql`(${t.workspaceId} IS NOT NULL) <> (${t.employerUserId} IS NOT NULL)`,
+    ),
+    exactlyOneSubscription: check(
+      "billing_invoice_exactly_one_subscription",
+      sql`(${t.subscriptionId} IS NOT NULL) <> (${t.employerSubscriptionId} IS NOT NULL)`,
+    ),
+    workspaceIdx: index("billing_invoices_workspace_idx").on(t.workspaceId),
+    employerIdx: index("billing_invoices_employer_idx").on(t.employerUserId),
+  }),
+);
+
+export const billingEvents = pgTable(
+  "billing_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    provider: text("provider").notNull(),
+    eventId: text("event_id").notNull(),
+    eventType: text("event_type").notNull(),
+    invoiceId: uuid("invoice_id").references(() => billingInvoices.id, {
+      onDelete: "set null",
+    }),
+    payload: jsonb("payload").notNull().default({}),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    eventOnce: uniqueIndex("billing_events_provider_event_unique").on(
+      t.provider,
+      t.eventId,
+    ),
   }),
 );

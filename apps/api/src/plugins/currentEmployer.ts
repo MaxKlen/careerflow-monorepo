@@ -16,6 +16,9 @@ export interface EmployerAuth {
   id: string;
   email: string;
   companyName: string | null;
+  isImpersonating: boolean;
+  impersonatorAdminUserId: string | null;
+  impersonationReason: string | null;
 }
 
 declare module "fastify" {
@@ -27,11 +30,9 @@ declare module "fastify" {
 export default fp(async (app) => {
   app.decorateRequest("employer", null);
   app.addHook("preHandler", async (req: FastifyRequest, reply) => {
-    // Employer APIs are same-origin to the dedicated employer app, even for reads.
     if (!req.url.startsWith("/employer/")) return;
     if (!trustedEmployerOrigin(req.headers.origin))
       return reply.code(403).send({ error: "invalid_origin" });
-    // Only decorate employer for /employer/* routes — never for candidate routes.
     const raw = req.cookies[EMPLOYER_COOKIE.name];
     if (!raw) return;
     const found = await findEmployerSession(raw);
@@ -40,6 +41,17 @@ export default fp(async (app) => {
       id: found.employerUserId,
       email: found.email,
       companyName: found.companyName,
+      isImpersonating: found.isImpersonation,
+      impersonatorAdminUserId: found.impersonatorAdminUserId,
+      impersonationReason: found.impersonationReason,
     };
+    if (
+      found.isImpersonation &&
+      !["GET", "HEAD", "OPTIONS"].includes(req.method) &&
+      !req.url.startsWith("/employer/auth/impersonation/end") &&
+      !req.url.startsWith("/employer/auth/signout")
+    ) {
+      return reply.code(403).send({ error: "impersonation_read_only" });
+    }
   });
 });

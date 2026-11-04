@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
+    "demo:seed": "tsx src/demoSeed.ts seed",
+    "demo:reset": "tsx src/demoSeed.ts reset",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -29,6 +29,7 @@ export default function AdminNav() {
       <strong>CareerFlow Admin</strong>
       <Link href="/">Dashboard</Link>
       <Link href="/users">User lookup</Link>
+      <Link href="/revenue">Revenue · DEMO</Link>
       <Link href="/flags">Feature flags</Link>
       <Link href="/audit">Audit log</Link>
       <Link href="/feedback">Feedback</Link>

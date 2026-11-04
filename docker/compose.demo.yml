@@ -1,0 +1,128 @@
+name: careerflow-demo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: careerflow
+      POSTGRES_PASSWORD: careerflow
+      POSTGRES_DB: careerflow_demo
+    ports:
+      - "5434:5432"
+    volumes:
+      - demo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U careerflow -d careerflow_demo"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.demo
+    command:
+      [
+        "sh",
+        "-lc",
+        "pnpm --filter @careerflow/db push && pnpm --filter @careerflow/api dev",
+      ]
+    environment:
+      NODE_ENV: development
+      PORT: "4000"
+      DATABASE_URL: postgres://careerflow:careerflow@postgres:5432/careerflow_demo
+      DEMO_MODE: "true"
+      PAYMENT_PROVIDER: "mock"
+      APP_URL: ${CAREERFLOW_DEMO_APP_URL:-http://localhost:3000}
+      EMPLOYER_URL: ${CAREERFLOW_DEMO_EMPLOYER_URL:-http://localhost:3002}
+      ADMIN_URL: ${CAREERFLOW_DEMO_ADMIN_URL:-http://localhost:3001}
+      EMAIL_ENABLED: "false"
+      MEH_PROVIDER_URL: ""
+      MEH_PROVIDER_KEY: ""
+      MEH_PROVIDER_MODEL: ""
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+      start_period: 20s
+
+  candidate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.demo
+    command:
+      ["sh", "-lc", "pnpm --filter @careerflow/web dev --hostname 0.0.0.0"]
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      API_URL: http://api:4000
+      NEXT_PUBLIC_API_URL: ${CAREERFLOW_DEMO_NEXT_PUBLIC_API_URL:-http://localhost:4000}
+      CANDIDATE_BASE_PATH: ${CAREERFLOW_DEMO_CANDIDATE_BASE_PATH:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  employer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.demo
+    command:
+      ["sh", "-lc", "pnpm --filter @careerflow/employer dev --hostname 0.0.0.0"]
+    environment:
+      NODE_ENV: development
+      PORT: "3002"
+      API_URL: http://api:4000
+      NEXT_PUBLIC_API_URL: ${CAREERFLOW_DEMO_NEXT_PUBLIC_API_URL:-http://localhost:4000}
+      EMPLOYER_BASE_PATH: ${CAREERFLOW_DEMO_EMPLOYER_BASE_PATH:-}
+    ports:
+      - "3002:3002"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  admin:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.demo
+    command:
+      ["sh", "-lc", "pnpm --filter @careerflow/admin dev --hostname 0.0.0.0"]
+    environment:
+      NODE_ENV: development
+      PORT: "3001"
+      API_URL: http://api:4000
+      NEXT_PUBLIC_API_URL: ${CAREERFLOW_DEMO_NEXT_PUBLIC_API_URL:-http://localhost:4000}
+      ADMIN_BASE_PATH: ${CAREERFLOW_DEMO_ADMIN_BASE_PATH:-}
+    ports:
+      - "3001:3001"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  gateway:
+    image: caddy:2-alpine
+    profiles: ["gateway"]
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./Caddyfile.demo:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - candidate
+      - employer
+      - admin
+
+volumes:
+  demo_pgdata:

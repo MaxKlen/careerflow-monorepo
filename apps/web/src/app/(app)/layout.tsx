@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import MehWidget from "@/components/MehWidget";
 import SignOut from "@/components/SignOut";
 import NotificationBell from "@/components/NotificationBell";
+import ImpersonationBanner from "@/components/ImpersonationBanner";
 
 export default async function AppLayout({
   children,
@@ -12,16 +13,27 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const cookieHeader = (await cookies()).toString();
-  let me: { user: { email: string; displayName?: string | null } };
+  let me: {
+    user: {
+      email: string;
+      displayName?: string | null;
+      isImpersonating?: boolean;
+    };
+  };
   try {
     me = await apiFetch<{
-      user: { email: string; displayName?: string | null };
+      user: {
+        email: string;
+        displayName?: string | null;
+        isImpersonating?: boolean;
+      };
     }>("/auth/me", { cookies: cookieHeader });
   } catch {
     redirect("/signin");
   }
   return (
     <>
+      {me.user.isImpersonating && <ImpersonationBanner email={me.user.email} />}
       <nav className="app-nav">
         <span className="brand">CareerFlow</span>
         <Link href="/home">Home</Link>
@@ -31,6 +43,7 @@ export default async function AppLayout({
         <Link href="/opportunities">Opportunities</Link>
         <Link href="/applications">Applications</Link>
         <Link href="/documents">Documents</Link>
+        <Link href="/membership">Membership</Link>
         <Link href="/cv/import">Import CV</Link>
         <Link href="/linkedin">LinkedIn</Link>
         <Link href="/meh">MEH</Link>

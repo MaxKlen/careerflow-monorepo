@@ -33,6 +33,17 @@ const emailEnabled = z
     return value;
   }, z.boolean())
   .default(false);
+const demoMode = z
+  .preprocess((value) => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (["true", "1", "yes", "on"].includes(normalized)) return true;
+      if (["false", "0", "no", "off", ""].includes(normalized)) return false;
+    }
+    return value;
+  }, z.boolean())
+  .default(false);
 const Schema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -59,12 +70,21 @@ const Schema = z.object({
   SMTP_PASS: optionalEnvString,
   SMTP_FROM: z.string().default("CareerFlow <noreply@careerflow.local>"),
   EMAIL_ENABLED: emailEnabled,
+  DEMO_MODE: demoMode,
   PAYMENT_PROVIDER: z
-    .enum(["none", "stripe", "paystack", "paddle"])
+    .enum(["none", "mock", "stripe", "paymob", "paystack", "paddle"])
     .default("none"),
 });
 const parsedEnv = Schema.parse(process.env);
+if (parsedEnv.PAYMENT_PROVIDER === "mock" && !parsedEnv.DEMO_MODE) {
+  throw new Error("PAYMENT_PROVIDER=mock requires DEMO_MODE=true");
+}
 if (parsedEnv.NODE_ENV === "production") {
+  if (parsedEnv.DEMO_MODE || parsedEnv.PAYMENT_PROVIDER === "mock") {
+    throw new Error(
+      "DEMO_MODE and the mock payment provider are disabled in production",
+    );
+  }
   const localDefaults = new Set([
     "http://localhost:3000",
     "http://localhost:3001",

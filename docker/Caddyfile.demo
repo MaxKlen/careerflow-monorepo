@@ -1,0 +1,26 @@
+:8080 {
+  @api path /api /api/*
+  handle @api {
+    uri strip_prefix /api
+    reverse_proxy api:4000
+  }
+
+  @candidate path /candidate /candidate/*
+  handle @candidate {
+    reverse_proxy candidate:3000
+  }
+
+  @employer path /employer /employer/*
+  handle @employer {
+    reverse_proxy employer:3002
+  }
+
+  @admin path /admin /admin/*
+  handle @admin {
+    reverse_proxy admin:3001
+  }
+
+  @root path /
+  redir @root /candidate/ 302
+  respond "Not found — try /candidate, /employer or /admin" 404
+}

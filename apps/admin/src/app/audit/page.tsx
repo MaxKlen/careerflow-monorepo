@@ -23,8 +23,8 @@ export default function AuditPage() {
     <div>
       <h1>Audit log</h1>
       <p style={{ color: "#94a3b8" }}>
-        Recent admin sign-ins, dashboard views, lookups, and feature-flag
-        changes.
+        Recent admin sign-ins, dashboard views, user status changes, billing
+        views, feature-flag changes, and impersonation start/end actions.
       </p>
       {error && (
         <p role="alert" style={{ color: "#fca5a5" }}>

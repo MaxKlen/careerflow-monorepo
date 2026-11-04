@@ -154,7 +154,7 @@ export async function registerAdminAuth(app: FastifyInstance): Promise<void> {
       body.password,
       rows[0]?.passwordHash ?? DUMMY_PASSWORD_HASH,
     );
-    if (!rows[0] || !passwordOk) {
+    if (!rows[0] || rows[0].suspendedAt || !passwordOk) {
       recordFailure(signInAttempts, ip);
       return reply.code(401).send({ error: "invalid_credentials" });
     }
@@ -192,7 +192,19 @@ export async function registerAdminAuth(app: FastifyInstance): Promise<void> {
     if (!adminOriginAllowed(req.headers.origin, env.ADMIN_URL))
       return reply.code(403).send({ error: "invalid_origin" });
     const raw = req.cookies[ADMIN_COOKIE.name];
+    const actor = raw ? await findAdminSession(raw) : null;
     if (raw) await destroyAdminSession(raw);
+    if (actor) {
+      await audit(
+        actor.adminUserId,
+        "admin.signout",
+        "admin_user",
+        actor.adminUserId,
+        {},
+        req.ip,
+        userAgent(req),
+      );
+    }
     reply.clearCookie(ADMIN_COOKIE.name, { path: "/" });
     return { ok: true };
   });

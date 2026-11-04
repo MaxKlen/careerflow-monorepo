@@ -28,10 +28,13 @@ import { registerNotifications } from "./routes/notifications.js";
 import { registerCalendarExport } from "./routes/calendarExport.js";
 import { registerAdminAuth } from "./routes/adminAuth.js";
 import { registerAdminActions } from "./routes/adminActions.js";
+import { registerOwnerActions } from "./routes/ownerActions.js";
 import { startNotificationsScheduler } from "./notificationsScheduler.js";
+import { startImpersonationReaper } from "./impersonationReaper.js";
 import { registerSettings } from "./routes/settings.js";
 import { registerFeedback } from "./routes/feedback.js";
 import { registerMembership } from "./routes/membership.js";
+import { registerEmployerMembership } from "./routes/employerMembership.js";
 import { registerAdminFeedback } from "./routes/adminFeedback.js";
 import { registerPasswordReset } from "./routes/passwordReset.js";
 import attachCurrentEmployer from "./plugins/currentEmployer.js";
@@ -59,13 +62,41 @@ if (env.MEH_PROVIDER_URL && env.MEH_PROVIDER_KEY && env.MEH_PROVIDER_MODEL) {
   app.log.info("MEH connected provider NOT configured — offline mode only");
 }
 
+function originOf(value: string): string {
+  return new URL(value).origin;
+}
+
 await app.register(cors, {
-  origin: [env.APP_URL, env.ADMIN_URL, env.EMPLOYER_URL],
+  origin: [
+    ...new Set([env.APP_URL, env.ADMIN_URL, env.EMPLOYER_URL].map(originOf)),
+  ],
   credentials: true,
 });
 await app.register(cookie);
 await app.register(attachCurrentUser);
 await app.register(attachCurrentEmployer);
+
+const stateChangingMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+app.addHook("onRequest", async (req, reply) => {
+  if (!stateChangingMethods.has(req.method)) return;
+  const pathname = new URL(req.url, "http://localhost").pathname;
+  const expectedUrl = pathname.startsWith("/admin/")
+    ? env.ADMIN_URL
+    : pathname.startsWith("/employer/")
+      ? env.EMPLOYER_URL
+      : env.APP_URL;
+  const rawOrigin = req.headers.origin;
+  let requestOrigin: string;
+  try {
+    if (!rawOrigin || rawOrigin === "null") throw new Error("missing_origin");
+    requestOrigin = new URL(rawOrigin).origin;
+  } catch {
+    return reply.code(403).send({ error: "invalid_origin" });
+  }
+  if (requestOrigin !== originOf(expectedUrl)) {
+    return reply.code(403).send({ error: "invalid_origin" });
+  }
+});
 
 await app.register(registerHealth);
 await app.register(registerAuth, { prefix: "/auth" });
@@ -88,7 +119,9 @@ await app.register(registerNotifications, { prefix: "/notifications" });
 await app.register(registerCalendarExport, { prefix: "/calendar" });
 await app.register(registerAdminAuth, { prefix: "/admin/auth" });
 await app.register(registerAdminActions, { prefix: "/admin" });
+await app.register(registerOwnerActions, { prefix: "/admin" });
 startNotificationsScheduler(app);
+startImpersonationReaper(app);
 
 await app.register(registerSettings, { prefix: "/settings" });
 await app.register(registerFeedback, { prefix: "/feedback" });
@@ -97,6 +130,9 @@ await app.register(registerMembership, { prefix: "/membership" });
 await app.register(registerAdminFeedback, { prefix: "/admin" });
 
 await app.register(registerEmployerAuth, { prefix: "/employer/auth" });
+await app.register(registerEmployerMembership, {
+  prefix: "/employer/membership",
+});
 await app.register(registerEmployerInvitations, {
   prefix: "/employer/invitations",
 });

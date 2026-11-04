@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { db } from "./db.js";
 import { adminSessions, adminUsers, auditLog } from "@careerflow/db";
 import { hashToken } from "./session.js";
@@ -54,6 +54,7 @@ export async function findAdminSession(raw: string) {
       and(
         eq(adminSessions.tokenHash, hashToken(raw)),
         gt(adminSessions.expiresAt, new Date()),
+        isNull(adminUsers.suspendedAt),
       ),
     )
     .limit(1);

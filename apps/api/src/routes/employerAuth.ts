@@ -3,12 +3,18 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { createHash } from "node:crypto";
 import { db } from "../db.js";
-import { employerUsers, employerInvitations } from "@careerflow/db";
+import {
+  auditLog,
+  employerInvitations,
+  employerSessions,
+  employerUsers,
+} from "@careerflow/db";
 import { hashPassword, verifyPassword } from "../password.js";
 import {
   EMPLOYER_COOKIE,
   createEmployerSession,
   destroyEmployerSession,
+  hashEmployerToken,
 } from "../employerSession.js";
 import { env } from "../env.js";
 
@@ -139,6 +145,7 @@ export async function registerEmployerAuth(
       .limit(1);
     if (
       !rows[0] ||
+      rows[0].suspendedAt ||
       !(await verifyPassword(body.password, rows[0].passwordHash))
     ) {
       return reply.code(401).send({ error: "invalid_credentials" });
@@ -167,7 +174,59 @@ export async function registerEmployerAuth(
 
   app.post("/signout", async (req, reply) => {
     const raw = req.cookies[EMPLOYER_COOKIE.name];
-    if (raw) await destroyEmployerSession(raw);
+    if (
+      raw &&
+      req.employer?.isImpersonating &&
+      req.employer.impersonatorAdminUserId
+    ) {
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(employerSessions)
+          .where(eq(employerSessions.tokenHash, hashEmployerToken(raw)));
+        await tx.insert(auditLog).values({
+          actorAdminUserId: req.employer!.impersonatorAdminUserId,
+          action: "admin.impersonation.ended",
+          targetType: "employer",
+          targetId: req.employer!.id,
+          metadata: { reason: "signout" },
+          ipAddress: req.ip,
+          userAgent:
+            typeof req.headers["user-agent"] === "string"
+              ? req.headers["user-agent"]
+              : null,
+        });
+      });
+    } else if (raw) await destroyEmployerSession(raw);
+    reply.clearCookie(EMPLOYER_COOKIE.name, { path: "/" });
+    return { ok: true };
+  });
+
+  app.post("/impersonation/end", async (req, reply) => {
+    const raw = req.cookies[EMPLOYER_COOKIE.name];
+    if (
+      !raw ||
+      !req.employer?.isImpersonating ||
+      !req.employer.impersonatorAdminUserId
+    ) {
+      return reply.code(403).send({ error: "not_impersonating" });
+    }
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(employerSessions)
+        .where(eq(employerSessions.tokenHash, hashEmployerToken(raw)));
+      await tx.insert(auditLog).values({
+        actorAdminUserId: req.employer!.impersonatorAdminUserId,
+        action: "admin.impersonation.ended",
+        targetType: "employer",
+        targetId: req.employer!.id,
+        metadata: { reason: "owner_exit" },
+        ipAddress: req.ip,
+        userAgent:
+          typeof req.headers["user-agent"] === "string"
+            ? req.headers["user-agent"]
+            : null,
+      });
+    });
     reply.clearCookie(EMPLOYER_COOKIE.name, { path: "/" });
     return { ok: true };
   });

@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  basePath: process.env.EMPLOYER_BASE_PATH || undefined,
   async headers() {
     return [
       {

@@ -5,6 +5,7 @@ type Dashboard = {
   totals: Record<string, number>;
   definitions: Record<string, string>;
   generatedAt: string;
+  demo?: boolean;
 };
 export default function AdminDashboard() {
   const [data, setData] = useState<Dashboard | null>(null);
@@ -29,11 +30,35 @@ export default function AdminDashboard() {
   if (!data) return <p>Loading live counts…</p>;
   return (
     <div>
-      <h1>Operations dashboard</h1>
+      <h1>Super-owner dashboard</h1>
       <p style={{ color: "#94a3b8", fontSize: 14 }}>
         Counts are read from live tables; definitions are shown beneath each
         number.
       </p>
+      <p style={{ color: "#fbbf24" }}>
+        <a href="/users" style={{ color: "#3ddc97" }}>
+          Manage all users
+        </a>{" "}
+        ·{" "}
+        <a href="/revenue" style={{ color: "#3ddc97" }}>
+          View simulated revenue and invoices
+        </a>
+      </p>
+      {data.demo && (
+        <p
+          style={{
+            border: "2px solid #f59e0b",
+            background: "#422006",
+            color: "#fcd34d",
+            padding: 12,
+            borderRadius: 8,
+            fontWeight: 700,
+          }}
+        >
+          DEMO / SYNTHETIC — seeded account counts and MRR are invented; not
+          real customers, revenue or payments.
+        </p>
+      )}
       <div
         style={{
           display: "grid",
@@ -47,8 +72,21 @@ export default function AdminDashboard() {
             key={key}
             style={{ background: "#1e3a5f", padding: 16, borderRadius: 8 }}
           >
-            <div style={{ fontSize: 32, fontWeight: 700 }}>{value}</div>
-            <div>{key}</div>
+            <div style={{ fontSize: 32, fontWeight: 700 }}>
+              {key === "simulatedMrrCents"
+                ? new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                  }).format(value / 100)
+                : value}
+            </div>
+            <div>
+              {key === "simulatedMrrCents"
+                ? "Simulated MRR · USD"
+                : key === "activeSubscriptions"
+                  ? "Active subscriptions"
+                  : key}
+            </div>
             <div
               style={{ color: "#94a3b8", fontSize: 11, marginBlockStart: 6 }}
             >

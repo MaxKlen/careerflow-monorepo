@@ -1,13 +1,30 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type { FastifyInstance } from "fastify";
-import { and, count, desc, eq, gte, ilike } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNull,
+  ne,
+} from "drizzle-orm";
+import { z } from "zod";
 import { db } from "../db.js";
 import {
   adminUsers,
+  adminSessions,
   applications,
   auditLog,
+  billingInvoices,
+  employerSessions,
+  employerSubscriptions,
+  employerUsers,
   featureFlags,
   sessions,
+  subscriptions,
   users,
   workspaces,
 } from "@careerflow/db";
@@ -19,6 +36,13 @@ import {
   findAdminSession,
 } from "../adminSession.js";
 import { env } from "../env.js";
+import { COOKIE, hashToken, IMPERSONATION_TTL_MS } from "../session.js";
+import {
+  EMPLOYER_COOKIE,
+  EMPLOYER_IMPERSONATION_TTL_MS,
+  hashEmployerToken,
+} from "../employerSession.js";
+import { getPlan } from "../billingCatalog.js";
 
 async function requireAdmin(
   req: any,
@@ -47,6 +71,15 @@ function agentUserAgent(req: any): string | null {
     : null;
 }
 
+const ManagedKind = z.enum(["candidate", "employer", "admin"]);
+const StatusAction = z.object({
+  action: z.enum(["suspend", "reactivate"]),
+  reason: z.string().trim().min(8).max(500),
+});
+const ImpersonationReason = z.object({
+  reason: z.string().trim().min(10).max(500),
+});
+
 export async function registerAdminActions(
   app: FastifyInstance,
 ): Promise<void> {
@@ -54,15 +87,34 @@ export async function registerAdminActions(
     const admin = await requireAdmin(req, reply);
     if (!admin) return;
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const [u, w, a, s] = await Promise.all([
+    const [u, e, ad, w, a, s, candidateSubs, employerSubs] = await Promise.all([
       db.select({ value: count() }).from(users),
+      db.select({ value: count() }).from(employerUsers),
+      db.select({ value: count() }).from(adminUsers),
       db.select({ value: count() }).from(workspaces),
       db.select({ value: count() }).from(applications),
       db
         .select({ value: count() })
         .from(sessions)
         .where(gte(sessions.createdAt, since)),
+      db
+        .select()
+        .from(subscriptions)
+        .where(inArray(subscriptions.status, ["active", "trialing"])),
+      db
+        .select()
+        .from(employerSubscriptions)
+        .where(inArray(employerSubscriptions.status, ["active", "trialing"])),
     ]);
+    const mrrCents =
+      candidateSubs.reduce(
+        (sum, row) => sum + getPlan("candidate", row.plan).amountCents,
+        0,
+      ) +
+      employerSubs.reduce(
+        (sum, row) => sum + getPlan("employer", row.plan).amountCents,
+        0,
+      );
     await audit(
       admin.adminUserId,
       "admin.view_dashboard",
@@ -74,17 +126,33 @@ export async function registerAdminActions(
     );
     return {
       totals: {
-        users: Number(u[0]?.value ?? 0),
+        users:
+          Number(u[0]?.value ?? 0) +
+          Number(e[0]?.value ?? 0) +
+          Number(ad[0]?.value ?? 0),
+        candidates: Number(u[0]?.value ?? 0),
+        employers: Number(e[0]?.value ?? 0),
+        admins: Number(ad[0]?.value ?? 0),
         workspaces: Number(w[0]?.value ?? 0),
         applications: Number(a[0]?.value ?? 0),
         sessionsLast24h: Number(s[0]?.value ?? 0),
+        simulatedMrrCents: mrrCents,
+        activeSubscriptions: candidateSubs.length + employerSubs.length,
       },
       definitions: {
-        users: "Rows in users table (authenticated candidate accounts)",
+        users: "All candidate, employer and admin account rows",
+        candidates: "Authenticated candidate accounts",
+        employers: "Employer accounts",
+        admins: "Admin accounts",
         workspaces: "Rows in workspaces table",
         applications: "Rows in applications table",
         sessionsLast24h: "Candidate sessions created in the last 24 hours",
+        simulatedMrrCents:
+          "Synthetic monthly recurring revenue in USD cents; not real revenue",
+        activeSubscriptions:
+          "Candidate and employer subscriptions in active/trialing states",
       },
+      demo: env.DEMO_MODE,
       generatedAt: new Date().toISOString(),
     };
   });
@@ -150,8 +218,21 @@ export async function registerAdminActions(
   app.get("/feature-flags", async (req, reply) => {
     const admin = await requireAdmin(req, reply);
     if (!admin) return;
+    const flags = await db
+      .select()
+      .from(featureFlags)
+      .orderBy(featureFlags.key);
+    await audit(
+      admin.adminUserId,
+      "admin.view_feature_flags",
+      "feature_flags",
+      null,
+      { resultCount: flags.length },
+      req.ip,
+      agentUserAgent(req),
+    );
     return {
-      flags: await db.select().from(featureFlags).orderBy(featureFlags.key),
+      flags,
     };
   });
 
