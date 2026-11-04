@@ -133,3 +133,9 @@ jobs:
         with:
           name: careerflow-service-logs
           path: /tmp/careerflow-*.log
+      - name: Upload M11 Walkthrough Screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: m11-walkthrough-screenshots
+          path: m11-step-*.png

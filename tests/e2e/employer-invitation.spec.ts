@@ -108,6 +108,7 @@ test("M11 employer invitation and projection flow", async ({ page }) => {
     await expect(
       page.getByRole("heading", { name: "Accept invitation" }),
     ).toBeVisible();
+    await page.screenshot({ path: "m11-step-1-accept.png", fullPage: true });
   });
 
   await test.step("2. Verify the invitation preview", async () => {
@@ -128,6 +129,10 @@ test("M11 employer invitation and projection flow", async ({ page }) => {
       .map((cookie) => `${cookie.name}=${cookie.value}`)
       .join("; ");
     expect(employerCookie).not.toBe("");
+    await page.screenshot({
+      path: "m11-step-2-employer-signup.png",
+      fullPage: true,
+    });
   });
 
   await test.step("5. Verify the employer projection page", async () => {
@@ -136,6 +141,10 @@ test("M11 employer invitation and projection flow", async ({ page }) => {
       page.getByRole("heading", { name: "M11 Product Role", level: 1 }),
     ).toBeVisible();
     await expect(page.getByText("M11 Product Role")).toBeVisible();
+    await page.screenshot({
+      path: "m11-step-3-projection.png",
+      fullPage: true,
+    });
   });
 
   await test.step("6. Verify the projected application remains scoped", async () => {
@@ -162,6 +171,16 @@ test("M11 employer invitation and projection flow", async ({ page }) => {
     await expect(revokeButton).toBeVisible();
     await revokeButton.click();
     await expect(candidatePage.getByText(/revoked/)).toBeVisible();
+    await candidatePage.screenshot({
+      path: "m11-step-4-candidate-revoke.png",
+      fullPage: true,
+    });
+    await candidatePage.reload();
+    await expect(candidatePage.getByText(/revoked/)).toBeVisible();
+    await candidatePage.screenshot({
+      path: "m11-step-5-revoked.png",
+      fullPage: true,
+    });
 
     const projectionAfterRevoke = await api(
       `/employer/applications/${applicationId}`,
