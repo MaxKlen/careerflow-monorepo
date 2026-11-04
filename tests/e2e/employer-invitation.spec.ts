@@ -119,6 +119,10 @@ test("M11 employer invitation and projection flow", async ({ page }) => {
   await test.step("3. Fill the employer registration form", async () => {
     await page.getByLabel("Company name").fill("CareerFlow Test Co");
     await page.getByLabel(/Password/).fill(employerPassword);
+    await page.screenshot({
+      path: "m11-step-2-employer-signup.png",
+      fullPage: true,
+    });
   });
 
   await test.step("4. Create the invited employer account", async () => {
@@ -129,10 +133,6 @@ test("M11 employer invitation and projection flow", async ({ page }) => {
       .map((cookie) => `${cookie.name}=${cookie.value}`)
       .join("; ");
     expect(employerCookie).not.toBe("");
-    await page.screenshot({
-      path: "m11-step-2-employer-signup.png",
-      fullPage: true,
-    });
   });
 
   await test.step("5. Verify the employer projection page", async () => {
