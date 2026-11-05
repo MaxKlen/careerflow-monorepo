@@ -5,6 +5,11 @@ export const API_URL =
       "http://localhost:4000")
     : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000");
 
+function apiBase(): string {
+  if (typeof window !== "undefined" || !API_URL.startsWith("/")) return API_URL;
+  return process.env.API_PROXY_TARGET ?? "http://localhost:4000";
+}
+
 type ApiOptions = RequestInit & { cookies?: string };
 
 function friendlyApiError(status: number, body: string): string {
@@ -37,10 +42,22 @@ export async function apiFetch<T>(
   options: ApiOptions = {},
 ): Promise<T> {
   const headers = new Headers(options.headers);
+  const base = apiBase();
   if (options.body && !headers.has("content-type"))
     headers.set("content-type", "application/json");
   if (options.cookies) headers.set("cookie", options.cookies);
-  const response = await fetch(`${API_URL}${path}`, {
+  if (base.startsWith("http") && new URL(base).hostname.endsWith(".loca.lt")) {
+    headers.set("Bypass-Tunnel-Reminder", "true");
+  }
+  if (
+    typeof window === "undefined" &&
+    API_URL.startsWith("/") &&
+    !headers.has("origin")
+  ) {
+    const origin = process.env.APP_URL ?? "http://localhost:3000";
+    headers.set("origin", new URL(origin).origin);
+  }
+  const response = await fetch(`${base}${path}`, {
     ...options,
     headers,
     credentials: "include",
