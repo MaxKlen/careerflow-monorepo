@@ -2,6 +2,8 @@
 
 Local-only: no paid hosting, production data, real AI/email or payment gateways. All users, plans, invoices, MRR and churn are **DEMO / SYNTHETIC**.
 
+The application is now plug-and-play by configuration: with no provider keys, checkout uses the guarded mock provider, uploads use the hardened local storage adapter, email uses the local SMTP/MailHog path or development log, and MEH uses offline deterministic guidance. Adding owner-supplied credentials through `.env` selects Stripe or Paymob, S3/R2, Resend, and Gemini/OpenAI without changing application routes. Live integrations are source-implemented but were not exercised in this local demo because no provider calls or credentials are authorized.
+
 **Run locally** (Docker Compose, Node.js 22+, pnpm; repository root):
 
 ```sh
@@ -22,4 +24,6 @@ cloudflared tunnel --url http://localhost:8080
 
 Copy the printed URL; in another terminal run `pnpm demo:tunnel-up https://YOUR-URL.trycloudflare.com`. Share only its `/candidate`, `/employer` and `/admin` paths. Anyone with the link can reach your laptop; never use production data. Stop `cloudflared` with Ctrl+C, then run `pnpm demo:down`.
 
-**Safety.** Mock checkout grants synthetic access/invoices; no charge or public webhook. Owner suspension revokes sessions; impersonation is audited, 15-minute and read-only. Stripe/Paymob are disabled; live payments still need real integration, credentials, signed webhooks and compliance/security work. The existing Candidate PWA preview is unchanged.
+**Safety.** Mock checkout grants synthetic access/invoices; no charge or public webhook. Owner suspension revokes sessions; impersonation is audited, 15-minute and read-only. Stripe/Paymob adapters are not configured by default; live payments still require owner-supplied credentials, signed-webhook setup, provider review, and compliance/security work. The existing Candidate PWA preview is unchanged.
+
+The Expo/mobile project is not present in this repository or its available branches, so mobile API integration remains blocked on recovery of the actual mobile source. Do not copy a generic Expo starter into this monorepo.

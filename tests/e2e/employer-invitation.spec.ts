@@ -15,6 +15,9 @@ test("M11 employer invitation and projection flow", async ({ page }) => {
     init: RequestInit & { json?: unknown } = {},
   ) {
     const headers = new Headers(init.headers);
+    if (!headers.has("origin")) {
+      headers.set("origin", candidateOrigin);
+    }
     if (init.json !== undefined) {
       headers.set("content-type", "application/json");
       init.body = JSON.stringify(init.json);

@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - main
+      - feat/phase2-mock-billing-owner-demo
 
 concurrency:
   group: careerflow-ci-${{ github.workflow }}-${{ github.ref }}

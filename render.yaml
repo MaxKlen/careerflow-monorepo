@@ -1,0 +1,124 @@
+# Render Blueprint for later owner-reviewed deployment. This file does not provision anything by itself.
+databases:
+  - name: careerflow-db
+    plan: free
+    databaseName: careerflow
+    user: careerflow
+
+services:
+  - type: web
+    name: careerflow-api
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @careerflow/db build
+    startCommand: pnpm --filter @careerflow/api start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: careerflow-db
+          property: connectionString
+      - key: PORT
+        value: "4000"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PAYMENT_PROVIDER
+        value: none
+      - key: DEMO_MODE
+        value: "false"
+      - key: APP_URL
+        sync: false
+      - key: ADMIN_URL
+        sync: false
+      - key: EMPLOYER_URL
+        sync: false
+      - key: ADMIN_BOOTSTRAP_TOKEN
+        sync: false
+      - key: STORAGE_DIR
+        value: ./data/uploads
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        value: us-east-1
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: PAYMOB_API_KEY
+        sync: false
+      - key: PAYMOB_INTEGRATION_ID
+        sync: false
+      - key: PAYMOB_IFRAME_ID
+        sync: false
+      - key: PAYMOB_HMAC_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+  - type: web
+    name: careerflow-candidate
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @careerflow/web build
+    startCommand: pnpm --filter @careerflow/web start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: careerflow-api
+          property: host
+
+  - type: web
+    name: careerflow-employer
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @careerflow/employer build
+    startCommand: pnpm --filter @careerflow/employer start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3002"
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: careerflow-api
+          property: host
+
+  - type: web
+    name: careerflow-admin
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @careerflow/admin build
+    startCommand: pnpm --filter @careerflow/admin start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: careerflow-api
+          property: host

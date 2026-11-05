@@ -127,6 +127,14 @@ export async function registerEmployerMembership(
     );
     if (!result)
       return reply.code(501).send({ error: "checkout_not_implemented" });
+    if (result.kind === "hosted_checkout") {
+      return {
+        checkoutUrl: result.url,
+        externalCheckoutId: result.externalId,
+        provider: provider.name,
+        demo: false,
+      };
+    }
     let recorded;
     try {
       recorded = await completePaymentEvent(result.event, action);

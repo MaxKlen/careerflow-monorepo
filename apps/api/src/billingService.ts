@@ -27,13 +27,15 @@ export class BillingTransitionError extends Error {
   }
 }
 
-function assertMockMode(event: InternalPaymentEvent): void {
+function assertPaymentEvent(event: InternalPaymentEvent): void {
+  if (event.eventType !== "checkout.succeeded") {
+    throw new Error("unsupported_payment_event");
+  }
   if (
-    event.provider !== "mock" ||
-    event.eventType !== "checkout.succeeded" ||
-    !env.DEMO_MODE ||
-    env.PAYMENT_PROVIDER !== "mock" ||
-    env.NODE_ENV === "production"
+    event.provider === "mock" &&
+    (!env.DEMO_MODE ||
+      env.PAYMENT_PROVIDER !== "mock" ||
+      env.NODE_ENV === "production")
   ) {
     throw new Error("mock_payment_event_not_allowed");
   }
@@ -69,7 +71,7 @@ export async function completePaymentEvent(
   event: InternalPaymentEvent,
   action: BillingAction = "checkout",
 ): Promise<PaymentEventResult> {
-  assertMockMode(event);
+  assertPaymentEvent(event);
   if (!Number.isInteger(event.amountCents) || event.amountCents < 0) {
     throw new Error("invalid_payment_amount");
   }
@@ -216,7 +218,7 @@ export async function completePaymentEvent(
     const values = {
       plan: event.plan,
       status: "active" as const,
-      provider: "mock",
+      provider: event.provider,
       externalId: event.externalSubscriptionId,
       currentPeriodStart: periodStart,
       currentPeriodEnd: periodEnd,
@@ -277,10 +279,10 @@ export async function completePaymentEvent(
           amountCents: event.amountCents,
           currency: event.currency,
           status: "paid",
-          provider: "mock",
+          provider: event.provider,
           externalInvoiceId: event.externalInvoiceId,
-          description: `${event.plan} monthly subscription — DEMO / SYNTHETIC`,
-          isSynthetic: true,
+          description: `${event.plan} monthly subscription — ${event.provider}`,
+          isSynthetic: event.provider === "mock",
           periodStart,
           periodEnd,
           issuedAt: periodStart,

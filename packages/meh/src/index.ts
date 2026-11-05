@@ -5,7 +5,12 @@ import type { MehMode } from "./modes.js";
 
 export type { MehRequest, MehResponse, MehProvider } from "./types.js";
 export type { MehMode } from "./modes.js";
-export { configureProvider, hasProvider } from "./connected.js";
+export {
+  configureProvider,
+  hasProvider,
+  createGeminiProvider,
+  createFallbackProvider,
+} from "./connected.js";
 export { offlineGuidance } from "./offline.js";
 export { createOpenAIProvider } from "./openaiProvider.js";
 export type { OpenAIProviderConfig } from "./openaiProvider.js";

@@ -13,14 +13,17 @@ cleanup() {
   if [ "$SIGNUP_ATTEMPTED" -eq 1 ]; then
     local signin_status delete_status verify_status
     signin_status="$(curl -sS -o /dev/null -w '%{http_code}' -c "$JAR" -X POST "$API/auth/signin" \
+      -H "origin: $WEB_URL" \
       -H 'content-type: application/json' \
       -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" 2>/dev/null)" || signin_status=000
     if [ "$signin_status" = "200" ]; then
       delete_status="$(curl -sS -o /dev/null -w '%{http_code}' -b "$JAR" -X POST "$API/settings/delete" \
+        -H "origin: $WEB_URL" \
         -H 'content-type: application/json' \
         -d "{\"password\":\"$PASSWORD\",\"confirmEmail\":\"$EMAIL\",\"acknowledgeIrreversible\":true}" 2>/dev/null)" || delete_status=000
       if [ "$delete_status" = "200" ]; then
         verify_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$API/auth/signin" \
+          -H "origin: $WEB_URL" \
           -H 'content-type: application/json' \
           -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" 2>/dev/null)" || verify_status=000
         if [ "$verify_status" = "401" ]; then
@@ -61,6 +64,7 @@ curl -fsS "$API/health" | grep -q '"ok":true'
 echo "→ signup"
 SIGNUP_ATTEMPTED=1
 curl -fsS -c "$JAR" -X POST "$API/auth/signup" \
+  -H "origin: $WEB_URL" \
   -H 'content-type: application/json' \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"displayName\":\"Smoke\"}" | grep -q '"user"'
 
@@ -69,6 +73,7 @@ curl -fsS -b "$JAR" "$API/auth/me" | grep -q '"user"'
 
 echo "→ create workspace"
 curl -fsS -b "$JAR" -X POST "$API/workspaces" \
+  -H "origin: $WEB_URL" \
   -H 'content-type: application/json' \
   -d '{"name":"Personal","kind":"personal"}' | grep -q '"workspace"'
 
@@ -77,10 +82,12 @@ WS=$(curl -fsS -b "$JAR" "$API/workspaces" | sed -E 's/.*"id":"([^"]+)".*/\1/')
 
 echo "→ meh offline respond"
 curl -fsS -b "$JAR" -X POST "$API/meh/respond" \
+  -H "origin: $WEB_URL" \
   -H 'content-type: application/json' \
   -d "{\"workspaceId\":\"$WS\",\"screen\":\"/home\",\"prompt\":\"what next?\"}" | grep -q '"modeKind":"offline"'
 
 echo "→ signout"
-curl -fsS -b "$JAR" -X POST "$API/auth/signout" | grep -q '"ok":true'
+curl -fsS -b "$JAR" -X POST "$API/auth/signout" \
+  -H "origin: $WEB_URL" | grep -q '"ok":true'
 
 echo "M0 smoke: OK"

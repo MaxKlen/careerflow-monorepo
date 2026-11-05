@@ -7,6 +7,12 @@ import {
   unlinkSync,
 } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { env } from "./env.js";
 
 const PROJECT_ROOT = realpathSync(process.cwd());
@@ -58,6 +64,22 @@ function resolveRoot(): string {
   return ensureDirectoryTree(PROJECT_ROOT, candidate);
 }
 const ROOT = resolveRoot();
+const remoteStorage =
+  env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY
+    ? new S3Client({
+        region: env.S3_REGION,
+        endpoint: env.S3_ENDPOINT,
+        forcePathStyle: env.S3_FORCE_PATH_STYLE,
+        credentials: {
+          accessKeyId: env.S3_ACCESS_KEY_ID,
+          secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+        },
+      })
+    : null;
+
+export function storageProvider(): "s3" | "local" {
+  return remoteStorage ? "s3" : "local";
+}
 
 export function storagePath(key: string): string {
   if (
@@ -103,13 +125,31 @@ function ensureSafeParent(full: string): void {
 export async function putObject(
   key: string,
   body: Buffer,
-  _mime: string,
+  mime: string,
 ): Promise<void> {
+  if (remoteStorage) {
+    await remoteStorage.send(
+      new PutObjectCommand({
+        Bucket: env.S3_BUCKET,
+        Key: key,
+        Body: body,
+        ContentType: mime,
+      }),
+    );
+    return;
+  }
   const full = storagePath(key);
   ensureSafeParent(full);
   writeFileSync(full, body, { flag: "wx", mode: 0o600 });
 }
 export async function getObject(key: string): Promise<Buffer> {
+  if (remoteStorage) {
+    const response = await remoteStorage.send(
+      new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: key }),
+    );
+    if (!response.Body) throw new Error("Stored object is empty");
+    return Buffer.from(await response.Body.transformToByteArray());
+  }
   const full = storagePath(key);
   ensureSafeParent(full);
   const stat = lstatSync(full);
@@ -121,6 +161,12 @@ export async function getObject(key: string): Promise<Buffer> {
 }
 
 export async function deleteObject(key: string): Promise<boolean> {
+  if (remoteStorage) {
+    await remoteStorage.send(
+      new DeleteObjectCommand({ Bucket: env.S3_BUCKET, Key: key }),
+    );
+    return true;
+  }
   const full = storagePath(key);
   const parentRel = relative(ROOT, dirname(full));
   if (
