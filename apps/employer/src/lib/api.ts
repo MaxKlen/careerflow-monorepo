@@ -4,6 +4,10 @@ const BASE =
       process.env.NEXT_PUBLIC_API_URL ??
       "http://localhost:4000")
     : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000");
+function apiBase(): string {
+  if (typeof window !== "undefined" || !BASE.startsWith("/")) return BASE;
+  return process.env.API_PROXY_TARGET ?? "http://localhost:4000";
+}
 
 function friendlyApiError(status: number, body: string): string {
   let code = "";
@@ -33,14 +37,27 @@ export async function apiFetch<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const headers = new Headers(init.headers);
+  const base = apiBase();
   if (init.body && !headers.has("content-type"))
     headers.set("content-type", "application/json");
-  const res = await fetch(`${BASE}${path}`, {
+  if (base.startsWith("http") && new URL(base).hostname.endsWith(".loca.lt")) {
+    headers.set("Bypass-Tunnel-Reminder", "true");
+  }
+  if (
+    typeof window === "undefined" &&
+    BASE.startsWith("/") &&
+    !headers.has("origin")
+  ) {
+    const origin = process.env.EMPLOYER_URL ?? "http://localhost:3002";
+    headers.set("origin", new URL(origin).origin);
+  }
+  const response = await fetch(`${base}${path}`, {
     ...init,
     headers,
     credentials: "include",
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(friendlyApiError(res.status, await res.text()));
-  return res.json() as Promise<T>;
+  if (!response.ok)
+    throw new Error(friendlyApiError(response.status, await response.text()));
+  return response.json() as Promise<T>;
 }

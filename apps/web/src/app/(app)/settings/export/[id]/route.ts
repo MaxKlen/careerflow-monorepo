@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { API_URL } from "@/lib/api";
 
+const API_SERVER_URL = process.env.API_PROXY_TARGET ?? API_URL;
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
@@ -10,7 +12,7 @@ export async function GET(
     return Response.json({ error: "not_found" }, { status: 404 });
   const cookieHeader = (await cookies()).toString();
   const upstream = await fetch(
-    `${API_URL}/settings/export/${encodeURIComponent(id)}`,
+    `${API_SERVER_URL}/settings/export/${encodeURIComponent(id)}`,
     {
       headers: { cookie: cookieHeader },
       cache: "no-store",
