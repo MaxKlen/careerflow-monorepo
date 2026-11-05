@@ -8,7 +8,11 @@ let passed = 0;
 async function request(path, { cookie, origin, ...init } = {}) {
   const headers = new Headers(init.headers);
   if (cookie) headers.set("cookie", cookie);
-  if (origin) headers.set("origin", origin);
+  if (origin) {
+    headers.set("origin", origin);
+  } else if (["POST", "PUT", "PATCH", "DELETE"].includes((init.method ?? "GET").toUpperCase())) {
+    headers.set("origin", candidateOrigin);
+  }
   if (
     init.body &&
     typeof init.body === "object" &&
