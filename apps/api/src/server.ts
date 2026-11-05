@@ -14,11 +14,14 @@ import { registerOpportunities } from "./routes/opportunities.js";
 import { registerApplications } from "./routes/applications.js";
 import { registerDocuments } from "./routes/documents.js";
 import multipart from "@fastify/multipart";
+import rawBody from "fastify-raw-body";
 import { registerCv } from "./routes/cv.js";
 import { registerLinkedIn } from "./routes/linkedin.js";
 import {
   configureProvider,
   createOpenAIProvider,
+  createGeminiProvider,
+  createFallbackProvider,
   MEH_SYSTEM_PROMPT,
 } from "@careerflow/meh";
 import { registerInterview } from "./routes/interview.js";
@@ -42,18 +45,56 @@ import { registerEmployerAuth } from "./routes/employerAuth.js";
 import { registerEmployerInvitations } from "./routes/employerInvitations.js";
 import { registerEmployerApplications } from "./routes/employerApplications.js";
 import { registerApplicationInvitations } from "./routes/applicationInvitations.js";
+import { registerPaymentWebhooks } from "./routes/paymentWebhooks.js";
 
 const app = Fastify({
   logger: { level: env.NODE_ENV === "development" ? "info" : "warn" },
 });
 
-if (env.MEH_PROVIDER_URL && env.MEH_PROVIDER_KEY && env.MEH_PROVIDER_MODEL) {
+const systemPrompt = env.MEH_SYSTEM_PROMPT ?? MEH_SYSTEM_PROMPT;
+if (env.GEMINI_API_KEY) {
+  const gemini = createGeminiProvider({
+    apiKey: env.GEMINI_API_KEY,
+    model: env.GEMINI_MODEL,
+    systemPrompt,
+  });
+  if (env.OPENAI_API_KEY) {
+    configureProvider(
+      createFallbackProvider(
+        gemini,
+        createOpenAIProvider({
+          baseUrl: env.OPENAI_BASE_URL,
+          apiKey: env.OPENAI_API_KEY,
+          model: env.OPENAI_MODEL,
+          systemPrompt,
+        }),
+      ),
+    );
+  } else {
+    configureProvider(gemini);
+  }
+  app.log.info("MEH Gemini provider configured");
+} else if (env.OPENAI_API_KEY) {
+  configureProvider(
+    createOpenAIProvider({
+      baseUrl: env.OPENAI_BASE_URL,
+      apiKey: env.OPENAI_API_KEY,
+      model: env.OPENAI_MODEL,
+      systemPrompt,
+    }),
+  );
+  app.log.info("MEH OpenAI provider configured");
+} else if (
+  env.MEH_PROVIDER_URL &&
+  env.MEH_PROVIDER_KEY &&
+  env.MEH_PROVIDER_MODEL
+) {
   configureProvider(
     createOpenAIProvider({
       baseUrl: env.MEH_PROVIDER_URL,
       apiKey: env.MEH_PROVIDER_KEY,
       model: env.MEH_PROVIDER_MODEL,
-      systemPrompt: env.MEH_SYSTEM_PROMPT ?? MEH_SYSTEM_PROMPT,
+      systemPrompt,
     }),
   );
   app.log.info("MEH connected provider configured");
@@ -72,6 +113,12 @@ await app.register(cors, {
   ],
   credentials: true,
 });
+await app.register(rawBody, {
+  field: "rawBody",
+  global: false,
+  encoding: "utf8",
+  runFirst: true,
+});
 await app.register(cookie);
 await app.register(attachCurrentUser);
 await app.register(attachCurrentEmployer);
@@ -80,6 +127,7 @@ const stateChangingMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 app.addHook("onRequest", async (req, reply) => {
   if (!stateChangingMethods.has(req.method)) return;
   const pathname = new URL(req.url, "http://localhost").pathname;
+  if (pathname.startsWith("/webhooks/")) return;
   const expectedUrl = pathname.startsWith("/admin/")
     ? env.ADMIN_URL
     : pathname.startsWith("/employer/")
@@ -140,6 +188,7 @@ await app.register(registerEmployerApplications, {
   prefix: "/employer/applications",
 });
 await app.register(registerApplicationInvitations, { prefix: "/applications" });
+await app.register(registerPaymentWebhooks, { prefix: "/webhooks" });
 app.get("/employer/me", async (req, reply) => {
   if (!req.employer) return reply.code(401).send({ error: "unauthenticated" });
   return { employer: req.employer };
